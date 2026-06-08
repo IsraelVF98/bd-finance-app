@@ -151,9 +151,10 @@ export default function Lancamentos() {
               <option value="" disabled hidden>Selecione uma categoria...</option>
               {categorias.map(c => <option key={c}>{c}</option>)}
             </Select>
-            <Select label="Pagante" value={despesa.quem_pagou} onChange={e => setDespesa(d => ({ ...d, quem_pagou: e.target.value }))}>
-              {pessoas.map(p => <option key={p}>{p}</option>)}
-            </Select>
+            <Select label="Pagante" value={form.quem_pagou} onChange={e => set("quem_pagou", e.target.value)}>
+            <option value="" disabled hidden>Selecione o pagante...</option>
+            {pessoas.map(p => <option key={p}>{p}</option>)}
+          </Select>
             <Input label="Descrição (opcional)" value={despesa.descricao} onChange={e => setDespesa(d => ({ ...d, descricao: e.target.value }))} placeholder="Ex: Conta de luz" />
             <Input label="Valor (R$)" value={despesa.valor} onChange={e => setDespesa(d => ({ ...d, valor: e.target.value }))} placeholder="0,00" />
             <div className="col-span-2">
