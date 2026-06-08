@@ -50,7 +50,6 @@ export default function Dashboard() {
       api.get("/dashboard/extrato", { params }),
     ]).then(([r, e, c, p, ex]) => {
       setResumo(r.data)
-      // Mescla receitas e despesas por mes_ano
       const mapa = {}
       e.data.receitas.forEach(x => { mapa[x.mes_ano] = { ...mapa[x.mes_ano], mes_ano: x.mes_ano, Receitas: x.total } })
       e.data.despesas.forEach(x => { mapa[x.mes_ano] = { ...mapa[x.mes_ano], mes_ano: x.mes_ano, Despesas: x.total } })
@@ -73,18 +72,19 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      {/* Topo Responsivo: Empilha no Mobile, Alinha no PC */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-white">Dashboard</h1>
 
-        {/* Filtros */}
-        <div className="flex items-center gap-3">
+        {/* Filtros ajustados com flex-wrap para telas menores */}
+        <div className="flex flex-wrap items-center gap-2 md:gap-3">
           <select value={filtroAno} onChange={e => setFiltroAno(e.target.value)}
-            className="bg-surface border border-border text-white text-sm px-3 py-1.5 rounded-lg focus:outline-none focus:border-green">
+            className="bg-surface border border-border text-white text-sm px-3 py-1.5 rounded-lg focus:outline-none focus:border-green flex-1 md:flex-none">
             {anos.map(a => <option key={a}>{a}</option>)}
           </select>
 
           <select value={filtroMes} onChange={e => setFiltroMes(e.target.value)}
-            className="bg-surface border border-border text-white text-sm px-3 py-1.5 rounded-lg focus:outline-none focus:border-green">
+            className="bg-surface border border-border text-white text-sm px-3 py-1.5 rounded-lg focus:outline-none focus:border-green flex-1 md:flex-none">
             <option value="todos">Ano Inteiro</option>
             {MESES.filter(([cod]) => mesesDisponiveis.includes(cod)).map(([cod, nome]) => (
               <option key={cod} value={cod}>{nome}</option>
@@ -92,15 +92,15 @@ export default function Dashboard() {
           </select>
 
           <select value={filtroPessoa} onChange={e => setFiltroPessoa(e.target.value)}
-            className="bg-surface border border-border text-white text-sm px-3 py-1.5 rounded-lg focus:outline-none focus:border-green">
+            className="bg-surface border border-border text-white text-sm px-3 py-1.5 rounded-lg focus:outline-none focus:border-green flex-1 md:flex-none">
             <option value="todos">Todos</option>
             {pessoas.map(p => <option key={p}>{p}</option>)}
           </select>
         </div>
       </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-3 gap-4">
+      {/* KPIs Responsivos: 1 coluna no Mobile, 3 colunas no PC */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <KpiCard label="Saldo Líquido" value={resumo.saldo}
           cor={saldoPositivo ? "#00E676" : "#e74c3c"}
           badge={saldoPositivo ? "↑ Positivo" : "↓ Negativo"} />
@@ -108,76 +108,91 @@ export default function Dashboard() {
         <KpiCard label="Total Despesas" value={resumo.despesas} cor="#e74c3c" sub="Saídas registradas" />
       </div>
 
-      {/* Gráfico evolução mensal */}
+      {/* Gráfico evolução mensal - Reduzi a altura no mobile (h-56) para não ocupar a tela toda */}
       {filtroMes === "todos" && evolucao.length > 0 && (
         <ChartCard title="Evolução Financeira Mensal">
-          <ResponsiveContainer width="100%" height={280}>
-            <LineChart data={evolucao}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#2a2d3e" />
-              <XAxis dataKey="mes_ano" tick={{ fill: "#a3a8b4", fontSize: 12 }} />
-              <YAxis tick={{ fill: "#a3a8b4", fontSize: 12 }} tickFormatter={v => `R$${(v/1000).toFixed(0)}k`} />
-              <Tooltip formatter={(v) => fmt(v)} contentStyle={{ background: "#161922", border: "1px solid #2a2d3e", borderRadius: 8 }} />
-              <Legend />
-              <Line type="monotone" dataKey="Receitas" stroke="#00E676" strokeWidth={2} dot={{ r: 4 }} />
-              <Line type="monotone" dataKey="Despesas" stroke="#e74c3c" strokeWidth={2} dot={{ r: 4 }} />
-            </LineChart>
-          </ResponsiveContainer>
+          <div className="w-full h-56 md:h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              {/* margin left -20 recolhe o espaço fantasma do Recharts */}
+              <LineChart data={evolucao} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#2a2d3e" />
+                <XAxis dataKey="mes_ano" tick={{ fill: "#a3a8b4", fontSize: 11 }} />
+                <YAxis tick={{ fill: "#a3a8b4", fontSize: 11 }} tickFormatter={v => `R$${(v/1000).toFixed(0)}k`} />
+                <Tooltip formatter={(v) => fmt(v)} contentStyle={{ background: "#161922", border: "1px solid #2a2d3e", borderRadius: 8 }} />
+                <Legend iconSize={10} wrapperStyle={{ fontSize: 12 }} />
+                <Line type="monotone" dataKey="Receitas" stroke="#00E676" strokeWidth={2} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="Despesas" stroke="#e74c3c" strokeWidth={2} dot={{ r: 3 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </ChartCard>
       )}
 
-      <div className="grid grid-cols-2 gap-4">
+      {/* Gráficos Secundários Responsivos: 1 coluna no Mobile, 2 no PC (lg:grid-cols-2) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Gastos por categoria */}
         {categorias.length > 0 && (
           <ChartCard title="Gastos por Categoria">
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={categorias} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="#2a2d3e" horizontal={false} />
-                <XAxis type="number" tick={{ fill: "#a3a8b4", fontSize: 11 }} tickFormatter={v => `R$${(v/1000).toFixed(0)}k`} />
-                <YAxis type="category" dataKey="categoria" tick={{ fill: "#a3a8b4", fontSize: 11 }} width={100} />
-                <Tooltip formatter={(v) => fmt(v)} contentStyle={{ background: "#161922", border: "1px solid #2a2d3e", borderRadius: 8 }} />
-                <Bar dataKey="total" fill="#00E676" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            <div className="w-full h-56 md:h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                {/* width do YAxis ajustado dinamicamente para não cortar texto no PC e caber no mobile */}
+                <BarChart data={categorias} layout="vertical" margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#2a2d3e" horizontal={false} />
+                  <XAxis type="number" tick={{ fill: "#a3a8b4", fontSize: 10 }} tickFormatter={v => `R$${(v/1000).toFixed(0)}k`} />
+                  <YAxis type="category" dataKey="categoria" tick={{ fill: "#a3a8b4", fontSize: 10 }} width={85} />
+                  <Tooltip formatter={(v) => fmt(v)} contentStyle={{ background: "#161922", border: "1px solid #2a2d3e", borderRadius: 8 }} />
+                  <Bar dataKey="total" fill="#00E676" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </ChartCard>
         )}
 
         {/* Avulsas vs Parceladas */}
         {pieData.length > 0 && (
           <ChartCard title="Avulsas vs. Parceladas">
-            <ResponsiveContainer width="100%" height={280}>
-              <PieChart>
-                <Pie data={pieData} cx="50%" cy="50%" innerRadius={70} outerRadius={110}
-                  dataKey="value" nameKey="name" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  labelLine={false}>
-                  <Cell fill="#00E676" />
-                  <Cell fill="#e67e22" />
-                </Pie>
-                <Tooltip formatter={(v) => fmt(v)} contentStyle={{ background: "#161922", border: "1px solid #2a2d3e", borderRadius: 8 }} />
-              </PieChart>
-            </ResponsiveContainer>
+            <div className="w-full h-56 md:h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                {/* Reduzi o raio do Pie para caber as labels externas em telas finas */}
+                <PieChart>
+                  <Pie data={pieData} cx="50%" cy="50%" innerRadius={55} outerRadius={85}
+                    dataKey="value" nameKey="name" 
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    labelLine={false} style={{ fontSize: 11, fill: "#a3a8b4" }}>
+                    <Cell fill="#00E676" />
+                    <Cell fill="#e67e22" />
+                  </Pie>
+                  <Tooltip formatter={(v) => fmt(v)} contentStyle={{ background: "#161922", border: "1px solid #2a2d3e", borderRadius: 8 }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
           </ChartCard>
         )}
       </div>
 
-      {/* Extrato */}
+      {/* Extrato Ultra Compacto */}
       {extrato.length > 0 && (
         <ChartCard title="Extrato de Despesas">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+          <div className="overflow-x-auto -mx-5 px-5"> {/* O truque do margin negativo expande o scroll até a borda do card no mobile */}
+            <table className="w-full text-xs md:text-sm whitespace-nowrap">
               <thead>
-                <tr className="border-b border-border text-muted text-xs">
+                <tr className="border-b border-border text-muted text-[10px] md:text-xs uppercase tracking-wider">
                   {(filtroMes === "todos" ? ["Mês/Ano", "Categoria", "Descrição", "Valor", "Quem Pagou"] : ["Categoria", "Descrição", "Valor", "Quem Pagou"])
-                    .map(h => <th key={h} className="text-left py-2 px-3 font-medium">{h}</th>)}
+                    .map(h => <th key={h} className="text-left py-2 px-2.5 font-medium">{h}</th>)}
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-border/40">
                 {extrato.map(row => (
-                  <tr key={row.id} className="border-b border-border/50 hover:bg-surface2 transition-colors">
-                    {filtroMes === "todos" && <td className="py-2 px-3 text-subtle">{row.mes_ano}</td>}
-                    <td className="py-2 px-3"><span className="bg-green/10 text-green px-2 py-0.5 rounded text-xs">{row.categoria}</span></td>
-                    <td className="py-2 px-3 text-muted">{row.descricao || "—"}</td>
-                    <td className="py-2 px-3 font-mono text-red">{fmt(row.valor)}</td>
-                    <td className="py-2 px-3 text-subtle">{row.quem_pagou}</td>
+                  <tr key={row.id} className="hover:bg-surface2 transition-colors">
+                    {filtroMes === "todos" && <td className="py-2 px-2.5 text-subtle font-mono text-[11px] md:text-xs">{row.mes_ano}</td>}
+                    <td className="py-2 px-2.5">
+                      <span className="bg-green/10 text-green px-1.5 py-0.5 rounded text-[10px] md:text-xs font-medium">
+                        {row.categoria}
+                      </span>
+                    </td>
+                    <td className="py-2 px-2.5 text-muted max-w-[140px] truncate md:max-w-none">{row.descricao || "—"}</td>
+                    <td className="py-2 px-2.5 font-mono text-red font-medium">{fmt(row.valor)}</td>
+                    <td className="py-2 px-2.5 text-subtle text-[11px] md:text-xs">{row.quem_pagou}</td>
                   </tr>
                 ))}
               </tbody>
@@ -191,19 +206,19 @@ export default function Dashboard() {
 
 function KpiCard({ label, value, cor, badge, sub }) {
   return (
-    <div className="bg-surface rounded-xl p-5 border-l-4" style={{ borderColor: cor }}>
+    <div className="bg-surface rounded-xl p-4 md:p-5 border-l-4" style={{ borderColor: cor }}>
       <p className="text-muted text-xs font-medium mb-1">{label}</p>
-      <p className="text-2xl font-bold font-mono mb-2" style={{ color: cor }}>{fmt(value)}</p>
-      {badge && <span className="text-xs font-semibold px-2 py-0.5 rounded" style={{ background: `${cor}20`, color: cor }}>{badge}</span>}
-      {sub && <p className="text-subtle text-xs">{sub}</p>}
+      <p className="text-xl md:text-2xl font-bold font-mono mb-1.5 md:mb-2" style={{ color: cor }}>{fmt(value)}</p>
+      {badge && <span className="text-[10px] md:text-xs font-semibold px-2 py-0.5 rounded" style={{ background: `${cor}20`, color: cor }}>{badge}</span>}
+      {sub && <p className="text-subtle text-[11px] md:text-xs mt-1">{sub}</p>}
     </div>
   )
 }
 
 function ChartCard({ title, children }) {
   return (
-    <div className="bg-surface rounded-xl p-5 border border-border">
-      <h3 className="text-sm font-semibold text-muted mb-4">{title}</h3>
+    <div className="bg-surface rounded-xl p-4 md:p-5 border border-border">
+      <h3 className="text-xs md:text-sm font-semibold text-muted mb-4">{title}</h3>
       {children}
     </div>
   )
