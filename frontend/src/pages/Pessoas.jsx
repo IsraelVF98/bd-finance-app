@@ -54,9 +54,11 @@ export default function Pessoas() {
   }
 
   return (
-    <div className="space-y-6 max-w-2xl">
-      <h1 className="text-2xl font-bold text-white">Pessoas</h1>
-      <p className="text-muted text-sm -mt-4">Membros que realizam movimentações financeiras.</p>
+    <div className="space-y-6 max-w-2xl relative z-10 block">
+      <div>
+        <h1 className="text-2xl font-bold text-white">Pessoas</h1>
+        <p className="text-muted text-sm mt-1">Membros que realizam movimentações financeiras.</p>
+      </div>
 
       {msg.texto && (
         <div className={`px-4 py-2.5 rounded-lg text-sm ${msg.tipo === "ok" ? "bg-green/10 text-green" : "bg-red/10 text-red"}`}>
@@ -64,26 +66,26 @@ export default function Pessoas() {
         </div>
       )}
 
-      <div className="bg-surface border border-border rounded-xl p-5">
+      <div className="bg-surface border border-border rounded-xl p-5 relative z-20">
         <h3 className="text-sm font-semibold text-muted mb-3">Adicionar Pessoa</h3>
-        <div className="flex gap-2">
+        <div className="grid grid-cols-[1fr_auto] gap-3 items-center">
           <input 
             value={nome} 
             onChange={e => setNome(e.target.value)}
             onKeyDown={e => e.key === "Enter" && adicionar()}
             placeholder="Ex: João, Maria..."
-            className="flex-1 bg-bg border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green" 
+            className="w-full bg-bg border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green" 
           />
           <button 
             onClick={adicionar}
-            className="bg-green text-bg px-4 py-2 rounded-lg text-sm font-bold hover:bg-green/90 active:scale-95 transition-all flex items-center gap-1.5"
+            className="bg-green text-bg px-5 py-2 rounded-lg text-sm font-bold hover:bg-green/90 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer relative z-30"
           >
             <Plus size={14} /> Adicionar
           </button>
         </div>
       </div>
 
-      <div className="bg-surface border border-border rounded-xl p-5">
+      <div className="bg-surface border border-border rounded-xl p-5 relative z-10">
         <h3 className="text-sm font-semibold text-muted mb-3">Pessoas Cadastradas</h3>
         {lista.length === 0 ? (
           <p className="text-subtle text-sm text-center py-4">Nenhuma pessoa cadastrada ainda.</p>
@@ -94,7 +96,7 @@ export default function Pessoas() {
                 <span className="text-sm text-white">▪ {p}</span>
                 <button 
                   onClick={() => remover(p)} 
-                  className="text-subtle hover:text-red transition-colors opacity-0 group-hover:opacity-100 p-1"
+                  className="text-subtle hover:text-red transition-colors opacity-0 group-hover:opacity-100 p-1 cursor-pointer"
                 >
                   <Trash2 size={14} />
                 </button>
