@@ -8,44 +8,49 @@ export default function Pessoas() {
   const [nome, setNome] = useState("")
   const [msg, setMsg] = useState({ tipo: "", texto: "" })
 
-  const flash = (tipo, texto) => { setMsg({ tipo, texto }); setTimeout(() => setMsg({ tipo: "", texto: "" }), 3000) }
-const carregar = () => {
-  const token = localStorage.getItem("token"); // ou o nome que você usou para salvar o JWT
-  return api.get("/pessoas", {
-    headers: { Authorization: `Bearer ${token}` }
-  })
-  .then(r => setLista(r.data))
-  .catch(e => console.error("Erro ao carregar pessoas:", e));
-};
+  const flash = (tipo, texto) => { 
+    setMsg({ tipo, texto }); 
+    setTimeout(() => setMsg({ tipo: "", texto: "" }), 3000) 
+  }
 
-// Altere a função adicionar:
-const adicionar = async () => {
-  if (!nome.trim()) return;
-  try {
-    const token = localStorage.getItem("token");
-    await api.post("/pessoas", { nome }, {
+  const carregar = () => {
+    const token = localStorage.getItem("bd_token");
+    return api.get("/pessoas", {
       headers: { Authorization: `Bearer ${token}` }
-    });
-    flash("ok", `"${nome}" adicionado!`);
-    setNome("");
-    carregar();
-  } catch (e) { flash("erro", e.response?.data?.detail || "Erro."); }
-};
+    })
+    .then(r => setLista(r.data))
+    .catch(e => console.error("Erro ao carregar pessoas:", e));
+  }
 
-// Altere a função remover:
-const remover = async (n) => {
-  try {
-    const token = localStorage.getItem("token");
-    await api.delete(`/pessoas/${encodeURIComponent(n)}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    carregar();
-  } catch (e) { console.error("Erro ao remover:", e); }
-};
+  useEffect(() => { 
+    carregar() 
+  }, [])
+
+  const adicionar = async () => {
+    if (!nome.trim()) return;
+    try {
+      const token = localStorage.getItem("bd_token");
+      await api.post("/pessoas", { nome }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      flash("ok", `"${nome}" adicionado!`);
+      setNome("");
+      carregar();
+    } catch (e) { 
+      flash("erro", e.response?.data?.detail || "Erro."); 
+    }
+  }
 
   const remover = async (n) => {
-    await api.delete(`/pessoas/${encodeURIComponent(n)}`)
-    carregar()
+    try {
+      const token = localStorage.getItem("bd_token");
+      await api.delete(`/pessoas/${encodeURIComponent(n)}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      carregar();
+    } catch (e) { 
+      console.error("Erro ao remover:", e); 
+    }
   }
 
   return (
@@ -62,12 +67,17 @@ const remover = async (n) => {
       <div className="bg-surface border border-border rounded-xl p-5">
         <h3 className="text-sm font-semibold text-muted mb-3">Adicionar Pessoa</h3>
         <div className="flex gap-2">
-          <input value={nome} onChange={e => setNome(e.target.value)}
+          <input 
+            value={nome} 
+            onChange={e => setNome(e.target.value)}
             onKeyDown={e => e.key === "Enter" && adicionar()}
             placeholder="Ex: João, Maria..."
-            className="flex-1 bg-bg border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green" />
-          <button onClick={adicionar}
-            className="bg-green text-bg px-4 py-2 rounded-lg text-sm font-bold hover:bg-green/90 active:scale-95 transition-all flex items-center gap-1.5">
+            className="flex-1 bg-bg border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green" 
+          />
+          <button 
+            onClick={adicionar}
+            className="bg-green text-bg px-4 py-2 rounded-lg text-sm font-bold hover:bg-green/90 active:scale-95 transition-all flex items-center gap-1.5"
+          >
             <Plus size={14} /> Adicionar
           </button>
         </div>
@@ -82,7 +92,10 @@ const remover = async (n) => {
             {lista.map(p => (
               <div key={p} className="flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-surface2 transition-colors group">
                 <span className="text-sm text-white">▪ {p}</span>
-                <button onClick={() => remover(p)} className="text-subtle hover:text-red transition-colors opacity-0 group-hover:opacity-100 p-1">
+                <button 
+                  onClick={() => remover(p)} 
+                  className="text-subtle hover:text-red transition-colors opacity-0 group-hover:opacity-100 p-1"
+                >
                   <Trash2 size={14} />
                 </button>
               </div>
