@@ -9,19 +9,39 @@ export default function Pessoas() {
   const [msg, setMsg] = useState({ tipo: "", texto: "" })
 
   const flash = (tipo, texto) => { setMsg({ tipo, texto }); setTimeout(() => setMsg({ tipo: "", texto: "" }), 3000) }
-  const carregar = () => api.get("/pessoas").then(r => setLista(r.data))
+const carregar = () => {
+  const token = localStorage.getItem("token"); // ou o nome que você usou para salvar o JWT
+  return api.get("/pessoas", {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  .then(r => setLista(r.data))
+  .catch(e => console.error("Erro ao carregar pessoas:", e));
+};
 
-  useEffect(() => { carregar() }, [])
+// Altere a função adicionar:
+const adicionar = async () => {
+  if (!nome.trim()) return;
+  try {
+    const token = localStorage.getItem("token");
+    await api.post("/pessoas", { nome }, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    flash("ok", `"${nome}" adicionado!`);
+    setNome("");
+    carregar();
+  } catch (e) { flash("erro", e.response?.data?.detail || "Erro."); }
+};
 
-  const adicionar = async () => {
-    if (!nome.trim()) return
-    try {
-      await api.post("/pessoas", { nome })
-      flash("ok", `"${nome}" adicionado!`)
-      setNome("")
-      carregar()
-    } catch (e) { flash("erro", e.response?.data?.detail || "Erro.") }
-  }
+// Altere a função remover:
+const remover = async (n) => {
+  try {
+    const token = localStorage.getItem("token");
+    await api.delete(`/pessoas/${encodeURIComponent(n)}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    carregar();
+  } catch (e) { console.error("Erro ao remover:", e); }
+};
 
   const remover = async (n) => {
     await api.delete(`/pessoas/${encodeURIComponent(n)}`)
