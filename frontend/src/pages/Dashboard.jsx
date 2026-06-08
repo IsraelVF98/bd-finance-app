@@ -14,10 +14,10 @@ const MESES = [
   ["09","Set"],["10","Out"],["11","Nov"],["12","Dez"],
 ]
 
-// Paleta de cores moderna e viva para diferenciar as colunas de categorias
+// Paleta de cores moderna e viva (Corrigido o bug do hexadecimal extra)
 const PALETA_CORES = [
   "#36A2EB", "#FF6384", "#FF9F40", "#4BC0C0", "#9966FF", 
-  "#FFCD56", "#C9CBCCF", "#FF5733", "#33FF57", "#3357FF"
+  "#FFCD56", "#C9CBCC", "#FF5733", "#33FF57", "#3357FF"
 ]
 
 export default function Dashboard() {
@@ -114,7 +114,7 @@ export default function Dashboard() {
         <KpiCard label="Total Despesas" value={resumo.despesas} cor="#EF553B" sub="Saídas registradas" />
       </div>
 
-      {/* TÓPICO 1 - Gráfico evolução mensal (Cores explícitas e forçadas nas linhas) */}
+      {/* TÓPICO 1 - Gráfico evolução mensal (Texto branco no popup adicionado) */}
       {filtroMes === "todos" && evolucao.length > 0 && (
         <ChartCard title="Evolução Financeira Mensal">
           <div className="w-full h-56 md:h-72">
@@ -123,7 +123,12 @@ export default function Dashboard() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#2a2d3e" />
                 <XAxis dataKey="mes_ano" tick={{ fill: "#a3a8b4", fontSize: 11 }} />
                 <YAxis tick={{ fill: "#a3a8b4", fontSize: 11 }} tickFormatter={v => `R$${(v/1000).toFixed(0)}k`} />
-                <Tooltip formatter={(v) => fmt(v)} contentStyle={{ background: "#161922", border: "1px solid #2a2d3e", borderRadius: 8 }} />
+                <Tooltip 
+                  formatter={(v) => fmt(v)} 
+                  contentStyle={{ background: "#161922", border: "1px solid #2a2d3e", borderRadius: 8 }}
+                  itemStyle={{ color: "#ffffff" }}
+                  labelStyle={{ color: "#ffffff" }}
+                />
                 <Legend iconSize={10} wrapperStyle={{ fontSize: 12 }} />
                 <Line type="monotone" dataKey="Receitas" stroke="#00E676" strokeWidth={2} dot={{ r: 3, fill: "#00E676" }} activeDot={{ r: 5 }} />
                 <Line type="monotone" dataKey="Despesas" stroke="#EF553B" strokeWidth={2} dot={{ r: 3, fill: "#EF553B" }} activeDot={{ r: 5 }} />
@@ -136,7 +141,7 @@ export default function Dashboard() {
       {/* Gráficos Secundários */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         
-        {/* TÓPICO 2 - Gastos por categoria (Barras Verticais e Coloridas individualmente) */}
+        {/* TÓPICO 2 - Gastos por categoria (Texto branco no popup adicionado) */}
         {categorias.length > 0 && (
           <ChartCard title="Gastos por Categoria">
             <div className="w-full h-56 md:h-72">
@@ -145,9 +150,13 @@ export default function Dashboard() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#2a2d3e" vertical={false} />
                   <XAxis type="category" dataKey="categoria" tick={{ fill: "#a3a8b4", fontSize: 10 }} />
                   <YAxis type="number" tick={{ fill: "#a3a8b4", fontSize: 10 }} tickFormatter={v => `R$${(v/1000).toFixed(0)}k`} />
-                  <Tooltip formatter={(v) => fmt(v)} contentStyle={{ background: "#161922", border: "1px solid #2a2d3e", borderRadius: 8 }} />
+                  <Tooltip 
+                    formatter={(v) => fmt(v)} 
+                    contentStyle={{ background: "#161922", border: "1px solid #2a2d3e", borderRadius: 8 }}
+                    itemStyle={{ color: "#ffffff" }}
+                    labelStyle={{ color: "#ffffff" }}
+                  />
                   <Bar dataKey="total" radius={[4, 4, 0, 0]}>
-                    {/* Injeta dinamicamente uma cor da paleta para cada coluna de categoria */}
                     {categorias.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={PALETA_CORES[index % PALETA_CORES.length]} />
                     ))}
@@ -158,40 +167,42 @@ export default function Dashboard() {
           </ChartCard>
         )}
 
-       {/* Avulsas vs Parceladas */}
-{pieData.length > 0 && (
-  <ChartCard title="Avulsas vs. Parceladas">
-    <div className="w-full h-56 md:h-72">
-      <ResponsiveContainer width="100%" height="100%">
-        <PieChart key={`pie-chart-${pieData.length}`}>
-          <Pie 
-            data={pieData} 
-            cx="50%" 
-            cy="50%" 
-            innerRadius={55} 
-            outerRadius={85}
-            dataKey="value" 
-            nameKey="name" 
-            labelLine={false} 
-            // Removemos o fill daqui de dentro para não pintar a pizza inteira de cinza
-            style={{ fontSize: 11 }} 
-            // Injetamos a cor diretamente na renderização da label de texto
-            label={({ name, percent }) => (
-              <text fill="#a3a8b4" textAnchor="middle" dominantBaseline="central">
-                {`${name} ${(percent * 100).toFixed(0)}%`}
-              </text>
-            )}
-          >
-            {/* Suas cores personalizadas agora vão fixar sem interferência externa */}
-            <Cell fill="#ef9a07" />
-            <Cell fill="#0512c8" />
-          </Pie>
-          <Tooltip formatter={(v) => fmt(v)} contentStyle={{ background: "#161922", border: "1px solid #2a2d3e", borderRadius: 8 }} />
-        </PieChart>
-      </ResponsiveContainer>
-    </div>
-  </ChartCard>
-)}
+        {/* Avulsas vs Parceladas (Texto branco no popup adicionado) */}
+        {pieData.length > 0 && (
+          <ChartCard title="Avulsas vs. Parceladas">
+            <div className="w-full h-56 md:h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart key={`pie-chart-${pieData.length}`}>
+                  <Pie 
+                    data={pieData} 
+                    cx="50%" 
+                    cy="50%" 
+                    innerRadius={55} 
+                    outerRadius={85}
+                    dataKey="value" 
+                    nameKey="name" 
+                    labelLine={false} 
+                    style={{ fontSize: 11 }} 
+                    label={({ name, percent }) => (
+                      <text fill="#a3a8b4" textAnchor="middle" dominantBaseline="central">
+                        {`${name} ${(percent * 100).toFixed(0)}%`}
+                      </text>
+                    )}
+                  >
+                    <Cell fill="#ef9a07" />
+                    <Cell fill="#0512c8" />
+                  </Pie>
+                  <Tooltip 
+                    formatter={(v) => fmt(v)} 
+                    contentStyle={{ background: "#161922", border: "1px solid #2a2d3e", borderRadius: 8 }}
+                    itemStyle={{ color: "#ffffff" }}
+                    labelStyle={{ color: "#ffffff" }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </ChartCard>
+        )}
       </div>
 
       {/* Extrato de Despesas */}
