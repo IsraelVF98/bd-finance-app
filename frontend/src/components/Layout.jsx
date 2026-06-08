@@ -4,7 +4,7 @@ import { useAuth } from "../context/AuthContext"
 import { LayoutDashboard, ArrowLeftRight, CreditCard, Tag, Users, LogOut } from "lucide-react"
 
 const menu = [
-  { to: "/dashboard",    label: "Dashboard",          icon: LayoutDashboard },
+  { to: "/dashboard",    label: "Dashboard",           icon: LayoutDashboard },
   { to: "/lancamentos",  label: "Receitas/Despesas",   icon: ArrowLeftRight },
   { to: "/parcelamentos",label: "Parcelamentos",       icon: CreditCard },
   { to: "/categorias",   label: "Categorias",          icon: Tag },
@@ -18,9 +18,9 @@ export default function Layout() {
   const handleLogout = () => { logout(); navigate("/login") }
 
   return (
-    <div className="flex h-screen bg-bg overflow-hidden">
+    <div className="flex h-screen w-screen bg-bg overflow-hidden relative">
       {/* Sidebar */}
-      <aside className="w-60 flex-shrink-0 bg-surface border-r border-border flex flex-col">
+      <aside className="w-60 flex-shrink-0 bg-surface border-r border-border flex flex-col z-10">
         <div className="p-5 border-b border-border">
           <span className="text-green font-bold text-xl tracking-tight">B&D Finance</span>
         </div>
@@ -53,8 +53,8 @@ export default function Layout() {
         </div>
       </aside>
 
-      {/* Conteúdo */}
-      <main className="flex-1 overflow-y-auto p-6">
+      {/* Conteúdo Principal Corrigido */}
+      <main className="flex-1 h-full overflow-y-auto p-6 min-w-0 relative z-0">
         <Outlet />
       </main>
     </div>
