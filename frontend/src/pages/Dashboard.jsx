@@ -158,25 +158,40 @@ export default function Dashboard() {
           </ChartCard>
         )}
 
-        {/* Avulsas vs Parceladas */}
-        {pieData.length > 0 && (
-          <ChartCard title="Avulsas vs. Parceladas">
-            <div className="w-full h-56 md:h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={pieData} cx="50%" cy="50%" innerRadius={55} outerRadius={85}
-                    dataKey="value" nameKey="name" 
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    labelLine={false} style={{ fontSize: 11, fill: "#a3a8b4" }}>
-                    <Cell fill="#00E676" />
-                    <Cell fill="#e67e22" />
-                  </Pie>
-                  <Tooltip formatter={(v) => fmt(v)} contentStyle={{ background: "#161922", border: "1px solid #2a2d3e", borderRadius: 8 }} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </ChartCard>
-        )}
+       {/* Avulsas vs Parceladas */}
+{pieData.length > 0 && (
+  <ChartCard title="Avulsas vs. Parceladas">
+    <div className="w-full h-56 md:h-72">
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart key={`pie-chart-${pieData.length}`}>
+          <Pie 
+            data={pieData} 
+            cx="50%" 
+            cy="50%" 
+            innerRadius={55} 
+            outerRadius={85}
+            dataKey="value" 
+            nameKey="name" 
+            labelLine={false} 
+            // Removemos o fill daqui de dentro para não pintar a pizza inteira de cinza
+            style={{ fontSize: 11 }} 
+            // Injetamos a cor diretamente na renderização da label de texto
+            label={({ name, percent }) => (
+              <text fill="#a3a8b4" textAnchor="middle" dominantBaseline="central">
+                {`${name} ${(percent * 100).toFixed(0)}%`}
+              </text>
+            )}
+          >
+            {/* Suas cores personalizadas agora vão fixar sem interferência externa */}
+            <Cell fill="#ef9a07" />
+            <Cell fill="#0512c8" />
+          </Pie>
+          <Tooltip formatter={(v) => fmt(v)} contentStyle={{ background: "#161922", border: "1px solid #2a2d3e", borderRadius: 8 }} />
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
+  </ChartCard>
+)}
       </div>
 
       {/* Extrato de Despesas */}
