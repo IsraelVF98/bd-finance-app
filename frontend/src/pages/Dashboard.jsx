@@ -14,6 +14,12 @@ const MESES = [
   ["09","Set"],["10","Out"],["11","Nov"],["12","Dez"],
 ]
 
+// Paleta de cores moderna e viva para diferenciar as colunas de categorias
+const PALETA_CORES = [
+  "#36A2EB", "#FF6384", "#FF9F40", "#4BC0C0", "#9966FF", 
+  "#FFCD56", "#C9CBCCF", "#FF5733", "#33FF57", "#3357FF"
+]
+
 export default function Dashboard() {
   const [anos, setAnos] = useState([])
   const [pessoas, setPessoas] = useState([])
@@ -72,11 +78,11 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Topo Responsivo: Empilha no Mobile, Alinha no PC */}
+      {/* Topo Responsivo */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-white">Dashboard</h1>
 
-        {/* Filtros ajustados com flex-wrap para telas menores */}
+        {/* Filtros */}
         <div className="flex flex-wrap items-center gap-2 md:gap-3">
           <select value={filtroAno} onChange={e => setFiltroAno(e.target.value)}
             className="bg-surface border border-border text-white text-sm px-3 py-1.5 rounded-lg focus:outline-none focus:border-green flex-1 md:flex-none">
@@ -99,49 +105,53 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* KPIs Responsivos: 1 coluna no Mobile, 3 colunas no PC */}
+      {/* KPIs Responsivos */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <KpiCard label="Saldo Líquido" value={resumo.saldo}
-          cor={saldoPositivo ? "#00E676" : "#e74c3c"}
+          cor={saldoPositivo ? "#00E676" : "#EF553B"}
           badge={saldoPositivo ? "↑ Positivo" : "↓ Negativo"} />
         <KpiCard label="Total Receitas" value={resumo.receitas} cor="#00E676" sub="Entradas registradas" />
-        <KpiCard label="Total Despesas" value={resumo.despesas} cor="#e74c3c" sub="Saídas registradas" />
+        <KpiCard label="Total Despesas" value={resumo.despesas} cor="#EF553B" sub="Saídas registradas" />
       </div>
 
-      {/* Gráfico evolução mensal - Reduzi a altura no mobile (h-56) para não ocupar a tela toda */}
+      {/* TÓPICO 1 - Gráfico evolução mensal (Cores explícitas e forçadas nas linhas) */}
       {filtroMes === "todos" && evolucao.length > 0 && (
         <ChartCard title="Evolução Financeira Mensal">
           <div className="w-full h-56 md:h-72">
             <ResponsiveContainer width="100%" height="100%">
-              {/* margin left -20 recolhe o espaço fantasma do Recharts */}
               <LineChart data={evolucao} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#2a2d3e" />
                 <XAxis dataKey="mes_ano" tick={{ fill: "#a3a8b4", fontSize: 11 }} />
                 <YAxis tick={{ fill: "#a3a8b4", fontSize: 11 }} tickFormatter={v => `R$${(v/1000).toFixed(0)}k`} />
                 <Tooltip formatter={(v) => fmt(v)} contentStyle={{ background: "#161922", border: "1px solid #2a2d3e", borderRadius: 8 }} />
                 <Legend iconSize={10} wrapperStyle={{ fontSize: 12 }} />
-                <Line type="monotone" dataKey="Receitas" stroke="#00E676" strokeWidth={2} dot={{ r: 3 }} />
-                <Line type="monotone" dataKey="Despesas" stroke="#e74c3c" strokeWidth={2} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="Receitas" stroke="#00E676" strokeWidth={2} dot={{ r: 3, fill: "#00E676" }} activeDot={{ r: 5 }} />
+                <Line type="monotone" dataKey="Despesas" stroke="#EF553B" strokeWidth={2} dot={{ r: 3, fill: "#EF553B" }} activeDot={{ r: 5 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
         </ChartCard>
       )}
 
-      {/* Gráficos Secundários Responsivos: 1 coluna no Mobile, 2 no PC (lg:grid-cols-2) */}
+      {/* Gráficos Secundários */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Gastos por categoria */}
+        
+        {/* TÓPICO 2 - Gastos por categoria (Barras Verticais e Coloridas individualmente) */}
         {categorias.length > 0 && (
           <ChartCard title="Gastos por Categoria">
             <div className="w-full h-56 md:h-72">
               <ResponsiveContainer width="100%" height="100%">
-                {/* width do YAxis ajustado dinamicamente para não cortar texto no PC e caber no mobile */}
-                <BarChart data={categorias} layout="vertical" margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#2a2d3e" horizontal={false} />
-                  <XAxis type="number" tick={{ fill: "#a3a8b4", fontSize: 10 }} tickFormatter={v => `R$${(v/1000).toFixed(0)}k`} />
-                  <YAxis type="category" dataKey="categoria" tick={{ fill: "#a3a8b4", fontSize: 10 }} width={85} />
+                <BarChart data={categorias} layout="horizontal" margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#2a2d3e" vertical={false} />
+                  <XAxis type="category" dataKey="categoria" tick={{ fill: "#a3a8b4", fontSize: 10 }} />
+                  <YAxis type="number" tick={{ fill: "#a3a8b4", fontSize: 10 }} tickFormatter={v => `R$${(v/1000).toFixed(0)}k`} />
                   <Tooltip formatter={(v) => fmt(v)} contentStyle={{ background: "#161922", border: "1px solid #2a2d3e", borderRadius: 8 }} />
-                  <Bar dataKey="total" fill="#00E676" radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="total" radius={[4, 4, 0, 0]}>
+                    {/* Injeta dinamicamente uma cor da paleta para cada coluna de categoria */}
+                    {categorias.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={PALETA_CORES[index % PALETA_CORES.length]} />
+                    ))}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -153,7 +163,6 @@ export default function Dashboard() {
           <ChartCard title="Avulsas vs. Parceladas">
             <div className="w-full h-56 md:h-72">
               <ResponsiveContainer width="100%" height="100%">
-                {/* Reduzi o raio do Pie para caber as labels externas em telas finas */}
                 <PieChart>
                   <Pie data={pieData} cx="50%" cy="50%" innerRadius={55} outerRadius={85}
                     dataKey="value" nameKey="name" 
@@ -170,10 +179,10 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Extrato Ultra Compacto */}
+      {/* Extrato de Despesas */}
       {extrato.length > 0 && (
         <ChartCard title="Extrato de Despesas">
-          <div className="overflow-x-auto -mx-5 px-5"> {/* O truque do margin negativo expande o scroll até a borda do card no mobile */}
+          <div className="overflow-x-auto -mx-5 px-5">
             <table className="w-full text-xs md:text-sm whitespace-nowrap">
               <thead>
                 <tr className="border-b border-border text-muted text-[10px] md:text-xs uppercase tracking-wider">
