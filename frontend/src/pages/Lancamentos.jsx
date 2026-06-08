@@ -47,7 +47,14 @@ export default function Lancamentos() {
 
   useEffect(() => {
     api.get("/categorias").then(r => setCategorias(r.data))
-    api.get("/pessoas").then(r => { setPessoas(r.data); if (r.data[0]) { setDespesa(d => ({ ...d, categoria: "", quem_pagou: r.data[0] })); setReceita(r => ({ ...r, fonte: r.data?.[0] || "" })) } })
+    api.get("/pessoas").then(r => { 
+      setPessoas(r.data); 
+      if (r.data[0]) { 
+        // Mantém categoria vazia para forçar a seleção manual
+        setDespesa(d => ({ ...d, categoria: "", quem_pagou: r.data[0] })); 
+        setReceita(r => ({ ...r, fonte: r.data?.[0] || "" })) 
+      } 
+    })
   }, [])
 
   useEffect(() => { carregarLista() }, [tipoLista, busca])
@@ -65,8 +72,11 @@ export default function Lancamentos() {
   }
 
   const salvarDespesa = async () => {
+    // VALIDAÇÃO DO BUG: Impede o envio se não escolher uma categoria
+    if (!despesa.categoria) { flash("erro", "Por favor, selecione uma categoria."); return }
     if (!despesa.valor || parseFloat(despesa.valor) <= 0) { flash("erro", "Valor deve ser maior que zero."); return }
     if (!despesa.quem_pagou) { flash("erro", "Selecione o pagante."); return }
+    
     setLoading(true)
     try {
       await api.post("/lancamentos/despesa", {
@@ -76,7 +86,8 @@ export default function Lancamentos() {
         quem_pagou: despesa.quem_pagou
       })
       flash("ok", "Despesa adicionada!")
-      setDespesa(d => ({ ...d, descricao: "", valor: "" }))
+      // Reseta o formulário e limpa a categoria para o próximo lançamento
+      setDespesa(d => ({ ...d, categoria: "", descricao: "", valor: "" }))
       carregarLista()
     } catch (e) { flash("erro", e.response?.data?.detail || "Erro.") }
     finally { setLoading(false) }
@@ -136,6 +147,8 @@ export default function Lancamentos() {
               {ANOS.map(a => <option key={a}>{a}</option>)}
             </Select>
             <Select label="Categoria" value={despesa.categoria} onChange={e => setDespesa(d => ({ ...d, categoria: e.target.value }))}>
+              {/* Opção padrão placeholder desativada */}
+              <option value="" disabled hidden>Selecione uma categoria...</option>
               {categorias.map(c => <option key={c}>{c}</option>)}
             </Select>
             <Select label="Pagante" value={despesa.quem_pagou} onChange={e => setDespesa(d => ({ ...d, quem_pagou: e.target.value }))}>

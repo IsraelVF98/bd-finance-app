@@ -37,9 +37,22 @@ export default function Parcelamentos() {
   const flash = (tipo, texto) => { setMsg({ tipo, texto }); setTimeout(() => setMsg({ tipo: "", texto: "" }), 3000) }
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
+  // CORREÇÃO AQUI: Atualiza o estado do form assim que as listas são carregadas
   useEffect(() => {
-    api.get("/categorias").then(r => setCategorias(r.data))
-    api.get("/pessoas").then(r => { setPessoas(r.data); if (r.data[0]) set("quem_pagou", r.data[0]) })
+    api.get("/categorias").then(r => {
+      setCategorias(r.data)
+      if (r.data && r.data.length > 0) {
+        setForm(f => ({ ...f, categoria: r.data[0] }))
+      }
+    })
+    
+    api.get("/pessoas").then(r => {
+      setPessoas(r.data)
+      if (r.data && r.data.length > 0) {
+        setForm(f => ({ ...f, quem_pagou: r.data[0] }))
+      }
+    })
+    
     carregarLista()
   }, [])
 
@@ -48,17 +61,34 @@ export default function Parcelamentos() {
   const salvar = async () => {
     const valor = parseFloat(String(form.valor_total).replace(",", "."))
     if (!valor || valor <= 0) { flash("erro", "Valor inválido."); return }
+    
+    // Validação extra de segurança no Front-end
+    if (!form.categoria || !form.quem_pagou) {
+      flash("erro", "Selecione uma categoria e um pagante válidos.")
+      return
+    }
+
     setLoading(true)
     try {
       await api.post("/parcelamentos/", {
-        descricao: form.descricao, categoria: form.categoria,
+        descricao: form.descricao, 
+        categoria: form.categoria,
         quem_pagou: form.quem_pagou,
         mes_inicial: `${MESES_MAP[form.mes]}/${form.ano}`,
         qtd_parcelas: parseInt(form.qtd_parcelas),
         valor_total: valor
       })
       flash("ok", "Parcelamento criado com sucesso!")
-      set("descricao", ""); set("valor_total", "")
+      
+      // Reseta mantendo os selects corretos preenchidos em vez de limpar tudo para ""
+      setForm(f => ({
+        ...f,
+        descricao: "",
+        valor_total: "",
+        categoria: categorias[0] || "",
+        quem_pagou: pessoas[0] || ""
+      }))
+      
       carregarLista()
     } catch (e) { flash("erro", e.response?.data?.detail || "Erro.") }
     finally { setLoading(false) }
