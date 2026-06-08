@@ -44,7 +44,7 @@ export default function Pessoas() {
         <div className="flex gap-2">
           <input value={nome} onChange={e => setNome(e.target.value)}
             onKeyDown={e => e.key === "Enter" && adicionar()}
-            placeholder="Ex: Israel, Débora..."
+            placeholder="Ex: João, Maria..."
             className="flex-1 bg-bg border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green" />
           <button onClick={adicionar}
             className="bg-green text-bg px-4 py-2 rounded-lg text-sm font-bold hover:bg-green/90 active:scale-95 transition-all flex items-center gap-1.5">
