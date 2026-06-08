@@ -189,8 +189,8 @@ export default function Dashboard() {
                       </text>
                     )}
                   >
-                    <Cell fill="#ef9a07" />
-                    <Cell fill="#0512c8" />
+                    <Cell fill="#FF9F40" />
+                    <Cell fill="#36A2EB" />
                   </Pie>
                   <Tooltip 
                     formatter={(v) => fmt(v)} 

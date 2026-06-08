@@ -50,3 +50,18 @@ def criar_tabelas():
                 usuario_id INTEGER REFERENCES usuarios(id) ON DELETE CASCADE
             );
         """))
+        
+        # MIGRATION: Adiciona a coluna custo_fixo se ela não existir
+        # Usamos o bloco 'EXCEPTION' do PostgreSQL para ignorar o erro caso a coluna já tenha sido adicionada antes
+        conn.execute(text("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 
+                    FROM information_schema.columns 
+                    WHERE table_name='despesas' AND column_name='custo_fixo'
+                ) THEN
+                    ALTER TABLE despesas ADD COLUMN custo_fixo BOOLEAN DEFAULT FALSE;
+                END IF;
+            END $$;
+        """))

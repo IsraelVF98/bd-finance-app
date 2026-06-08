@@ -42,7 +42,7 @@ def resumo(filtro_ano: str = None, filtro_mes: str = None, filtro_pessoa: str = 
             params_desp["ano"] = f"%/{filtro_ano}"
         if filtro_pessoa and filtro_pessoa != "todos":
             q_desp += " AND quem_pagou = :pessoa"
-            params_desp["pessoa"] = filtro_pessoa
+            params_desp["persona"] = filtro_pessoa
         desp_total = conn.execute(text(q_desp), params_desp).scalar()
 
     return {
@@ -102,7 +102,7 @@ def por_categoria(filtro_ano: str = None, filtro_mes: str = None, filtro_pessoa:
 
 @router.get("/avulsas-vs-parceladas")
 def avulsas_vs_parceladas(filtro_ano: str = None, filtro_mes: str = None,
-                           user=Depends(get_current_user)):
+                          user=Depends(get_current_user)):
     uid = user["id"]
     params = {"uid": uid}
     filtros = "WHERE usuario_id = :uid"
@@ -115,17 +115,29 @@ def avulsas_vs_parceladas(filtro_ano: str = None, filtro_mes: str = None,
         params["ano"] = f"%/{filtro_ano}"
 
     with engine.connect() as conn:
+        # Avulsas: Não são parceladas E não são custo fixo
         avulsas = conn.execute(text(f"""
             SELECT COALESCE(SUM(valor),0) FROM despesas
-            {filtros} AND id_parcelamento IS NULL
+            {filtros} AND id_parcelamento IS NULL AND (custo_fixo IS NULL OR custo_fixo = FALSE)
         """), params).scalar()
 
+        # Parceladas: Possuem um ID de parcelamento atrelado
         parceladas = conn.execute(text(f"""
             SELECT COALESCE(SUM(valor),0) FROM despesas
             {filtros} AND id_parcelamento IS NOT NULL
         """), params).scalar()
 
-    return {"avulsas": float(avulsas), "parceladas": float(parceladas)}
+        # Custos Fixos: Marcadas explicitamente como custo fixo
+        custos_fixos = conn.execute(text(f"""
+            SELECT COALESCE(SUM(valor),0) FROM despesas
+            {filtros} AND custo_fixo = TRUE
+        """), params).scalar()
+
+    return {
+        "avulsas": float(avulsas), 
+        "parceladas": float(parceladas),
+        "custos_fixos": float(custos_fixos)
+    }
 
 @router.get("/extrato")
 def extrato(filtro_ano: str = None, filtro_mes: str = None, filtro_pessoa: str = None,

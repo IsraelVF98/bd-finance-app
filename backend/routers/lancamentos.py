@@ -13,6 +13,7 @@ class DespesaBody(BaseModel):
     descricao: str = ""
     valor: float
     quem_pagou: str
+    custo_fixo: bool = False  # <--- UPGRADE: Adicionado campo com valor padrão False
 
 class ReceitaBody(BaseModel):
     mes_ano: str
@@ -25,10 +26,17 @@ def criar_despesa(body: DespesaBody, user=Depends(get_current_user)):
         raise HTTPException(400, "Valor deve ser maior que zero.")
     with engine.begin() as conn:
         conn.execute(text("""
-            INSERT INTO despesas (mes_ano, categoria, descricao, valor, quem_pagou, usuario_id)
-            VALUES (:mes_ano, :cat, :desc, :valor, :quem, :uid)
-        """), {"mes_ano": body.mes_ano, "cat": body.categoria, "desc": body.descricao,
-               "valor": body.valor, "quem": body.quem_pagou, "uid": user["id"]})
+            INSERT INTO despesas (mes_ano, categoria, descricao, valor, quem_pagou, usuario_id, custo_fixo)
+            VALUES (:mes_ano, :cat, :desc, :valor, :quem, :uid, :custo_fixo)
+        """), {
+            "mes_ano": body.mes_ano, 
+            "cat": body.categoria, 
+            "desc": body.descricao,
+            "valor": body.valor, 
+            "quem": body.quem_pagou, 
+            "uid": user["id"],
+            "custo_fixo": body.custo_fixo  # <--- UPGRADE: Salvando o valor no banco
+        })
     return {"message": "Despesa adicionada com sucesso!"}
 
 @router.post("/receita")
@@ -46,7 +54,15 @@ def criar_receita(body: ReceitaBody, user=Depends(get_current_user)):
 def listar_despesas(tipo: str = "avulsas", busca: str = "", user=Depends(get_current_user)):
     uid = user["id"]
     params = {"uid": uid}
-    filtro_tipo = "AND id_parcelamento IS NULL" if tipo == "avulsas" else ""
+    
+    # UPGRADE: Ajustando os filtros para suportar o novo tipo 'fixos' se quiser usar no front futuramente
+    if tipo == "avulsas":
+        filtro_tipo = "AND id_parcelamento IS NULL AND custo_fixo = FALSE"
+    elif tipo == "fixos":
+        filtro_tipo = "AND id_parcelamento IS NULL AND custo_fixo = TRUE"
+    else:  # parceladas
+        filtro_tipo = "AND id_parcelamento IS NOT NULL"
+
     filtro_busca = ""
     if busca:
         filtro_busca = "AND (categoria ILIKE :busca OR descricao ILIKE :busca OR quem_pagou ILIKE :busca)"
@@ -54,13 +70,21 @@ def listar_despesas(tipo: str = "avulsas", busca: str = "", user=Depends(get_cur
 
     with engine.connect() as conn:
         rows = conn.execute(text(f"""
-            SELECT id, mes_ano, categoria, descricao, valor, quem_pagou
+            SELECT id, mes_ano, categoria, descricao, valor, quem_pagou, custo_fixo
             FROM despesas WHERE usuario_id = :uid {filtro_tipo} {filtro_busca}
             ORDER BY id DESC LIMIT 100
         """), params).fetchall()
 
-    return [{"id": r[0], "mes_ano": r[1], "categoria": r[2],
-             "descricao": r[3], "valor": float(r[4]), "quem_pagou": r[5]} for r in rows]
+    # UPGRADE: Retornando o custo_fixo mapeado para o frontend (r[6])
+    return [{
+        "id": r[0], 
+        "mes_ano": r[1], 
+        "categoria": r[2],
+        "descricao": r[3], 
+        "valor": float(r[4]), 
+        "quem_pagou": r[5],
+        "custo_fixo": bool(r[6])  # <--- Informando ao front se é fixo ou não
+    } for r in rows]
 
 @router.get("/receitas")
 def listar_receitas(busca: str = "", user=Depends(get_current_user)):
