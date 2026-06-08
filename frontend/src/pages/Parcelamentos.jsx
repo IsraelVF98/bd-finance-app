@@ -28,6 +28,7 @@ export default function Parcelamentos() {
   const [loading, setLoading] = useState(false)
   const [msg, setMsg] = useState({ tipo: "", texto: "" })
 
+  // Começa com strings vazias para obrigar a seleção manual
   const [form, setForm] = useState({
     descricao: "", categoria: "", quem_pagou: "",
     mes: MESES[new Date().getMonth()], ano: anoAtual,
@@ -37,42 +38,26 @@ export default function Parcelamentos() {
   const flash = (tipo, texto) => { setMsg({ tipo, texto }); setTimeout(() => setMsg({ tipo: "", texto: "" }), 3000) }
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
-  // CORREÇÃO AQUI: Atualiza o estado do form assim que as listas são carregadas
   useEffect(() => {
-    api.get("/categorias").then(r => {
-      setCategorias(r.data)
-      if (r.data && r.data.length > 0) {
-        setForm(f => ({ ...f, categoria: r.data[0] }))
-      }
-    })
-    
-    api.get("/pessoas").then(r => {
-      setPessoas(r.data)
-      if (r.data && r.data.length > 0) {
-        setForm(f => ({ ...f, quem_pagou: r.data[0] }))
-      }
-    })
-    
+    api.get("/categorias").then(r => setCategorias(r.data))
+    api.get("/pessoas").then(r => setPessoas(r.data))
     carregarLista()
   }, [])
 
   const carregarLista = () => api.get("/parcelamentos/").then(r => setLista(r.data))
 
   const salvar = async () => {
-    const valor = parseFloat(String(form.valor_total).replace(",", "."))
-    if (!valor || valor <= 0) { flash("erro", "Valor inválido."); return }
+    // VALIDAÇÃO PADRONIZADA: Barra se não escolher categoria ou pagante
+    if (!form.categoria) { flash("erro", "Por favor, selecione uma categoria."); return }
+    if (!form.quem_pagou) { flash("erro", "Por favor, selecione o pagante."); return }
     
-    // Validação extra de segurança no Front-end
-    if (!form.categoria || !form.quem_pagou) {
-      flash("erro", "Selecione uma categoria e um pagante válidos.")
-      return
-    }
-
+    const valor = parseFloat(String(form.valor_total).replace(",", "."))
+    if (!valor || valor <= 0) { flash("erro", "Valor total deve ser maior que zero."); return }
+    
     setLoading(true)
     try {
       await api.post("/parcelamentos/", {
-        descricao: form.descricao, 
-        categoria: form.categoria,
+        descricao: form.descricao, categoria: form.categoria,
         quem_pagou: form.quem_pagou,
         mes_inicial: `${MESES_MAP[form.mes]}/${form.ano}`,
         qtd_parcelas: parseInt(form.qtd_parcelas),
@@ -80,15 +65,8 @@ export default function Parcelamentos() {
       })
       flash("ok", "Parcelamento criado com sucesso!")
       
-      // Reseta mantendo os selects corretos preenchidos em vez de limpar tudo para ""
-      setForm(f => ({
-        ...f,
-        descricao: "",
-        valor_total: "",
-        categoria: categorias[0] || "",
-        quem_pagou: pessoas[0] || ""
-      }))
-      
+      // Reseta limpando os campos e resetando os placeholders
+      setForm(f => ({ ...f, descricao: "", valor_total: "", categoria: "", quem_pagou: "" }))
       carregarLista()
     } catch (e) { flash("erro", e.response?.data?.detail || "Erro.") }
     finally { setLoading(false) }
@@ -116,12 +94,17 @@ export default function Parcelamentos() {
         <h3 className="text-sm font-semibold text-muted mb-4">Nova Compra Parcelada</h3>
         <div className="grid grid-cols-2 gap-4">
           <Input label="Descrição (opcional)" value={form.descricao} onChange={e => set("descricao", e.target.value)} placeholder="Ex: Notebook Samsung" />
+          
           <Select label="Categoria" value={form.categoria} onChange={e => set("categoria", e.target.value)}>
+            <option value="" disabled hidden>Selecione uma categoria...</option>
             {categorias.map(c => <option key={c}>{c}</option>)}
           </Select>
+
           <Select label="Pagante" value={form.quem_pagou} onChange={e => set("quem_pagou", e.target.value)}>
+            <option value="" disabled hidden>Selecione o pagante...</option>
             {pessoas.map(p => <option key={p}>{p}</option>)}
           </Select>
+
           <Input label="Valor Total (R$)" value={form.valor_total} onChange={e => set("valor_total", e.target.value)} placeholder="0,00" />
           <Select label="Mês da 1ª Parcela" value={form.mes} onChange={e => set("mes", e.target.value)}>
             {MESES.map(m => <option key={m}>{m}</option>)}
