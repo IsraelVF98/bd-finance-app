@@ -50,7 +50,7 @@ export default function Login() {
         {/* Logo alinhada de forma compacta e com alto contraste */}
         <div className="flex flex-col items-center justify-center text-center mb-4">
           <div className="flex items-center justify-center gap-4">
-            <img src={logo} alt="B&D Finance Logo" className="w-20 h-20 object-contain" />
+            <img src={logo} alt="B&D Finance Logo" className="w-60 h-60 object-contain" />
             <div className="text-4xl font-bold tracking-tight">
             </div>
           </div>
