@@ -13,7 +13,7 @@ class DespesaBody(BaseModel):
     descricao: str = ""
     valor: float
     quem_pagou: str
-    custo_fixo: bool = False  # <--- UPGRADE: Adicionado campo com valor padrão False
+    custo_fixo: bool = False  # UPGRADE: Adicionado campo com valor padrão False
 
 class ReceitaBody(BaseModel):
     mes_ano: str
@@ -35,7 +35,7 @@ def criar_despesa(body: DespesaBody, user=Depends(get_current_user)):
             "valor": body.valor, 
             "quem": body.quem_pagou, 
             "uid": user["id"],
-            "custo_fixo": body.custo_fixo  # <--- UPGRADE: Salvando o valor no banco
+            "custo_fixo": body.custo_fixo  # UPGRADE: Salvando o valor no banco
         })
     return {"message": "Despesa adicionada com sucesso!"}
 
@@ -55,10 +55,10 @@ def listar_despesas(tipo: str = "avulsas", busca: str = "", user=Depends(get_cur
     uid = user["id"]
     params = {"uid": uid}
     
-    # UPGRADE: Ajustando os filtros para suportar o novo tipo 'fixos' se quiser usar no front futuramente
+    # UPGRADE: Ajustando filtros para suportar registros antigos (onde custo_fixo é NULL) e evitar bugs de digitação
     if tipo == "avulsas":
-        filtro_tipo = "AND id_parcelamento IS NULL AND custo_fixo = FALSE"
-    elif tipo == "fixos":
+        filtro_tipo = "AND id_parcelamento IS NULL AND (custo_fixo IS NULL OR custo_fixo = FALSE)"
+    elif tipo in ("fixos", "fixas"):
         filtro_tipo = "AND id_parcelamento IS NULL AND custo_fixo = TRUE"
     else:  # parceladas
         filtro_tipo = "AND id_parcelamento IS NOT NULL"
@@ -75,7 +75,7 @@ def listar_despesas(tipo: str = "avulsas", busca: str = "", user=Depends(get_cur
             ORDER BY id DESC LIMIT 100
         """), params).fetchall()
 
-    # UPGRADE: Retornando o custo_fixo mapeado para o frontend (r[6])
+    # UPGRADE: Retornando o custo_fixo de forma segura para o frontend
     return [{
         "id": r[0], 
         "mes_ano": r[1], 
@@ -83,7 +83,7 @@ def listar_despesas(tipo: str = "avulsas", busca: str = "", user=Depends(get_cur
         "descricao": r[3], 
         "valor": float(r[4]), 
         "quem_pagou": r[5],
-        "custo_fixo": bool(r[6])  # <--- Informando ao front se é fixo ou não
+        "custo_fixo": bool(r[6]) if r[6] is not None else False
     } for r in rows]
 
 @router.get("/receitas")

@@ -36,7 +36,7 @@ export default function Dashboard() {
   const [resumo, setResumo] = useState({ receitas: 0, despesas: 0, saldo: 0 })
   const [evolucao, setEvolucao] = useState([])
   const [categorias, setCategorias] = useState([])
-  const [proporcao, setProporcao] = useState({ avulsas: 0, parceladas: 0 })
+  cconst [proporcao, setProporcao] = useState({ avulsas: 0, parceladas: 0, custos_fixos: 0 })
   const [extrato, setExtrato] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -93,8 +93,9 @@ export default function Dashboard() {
   const saldoPositivo = resumo.saldo >= 0
 
   const pieData = [
-    { name: "Avulsas", value: proporcao.avulsas },
-    { name: "Parceladas", value: proporcao.parceladas },
+  { name: "Avulsas", value: proporcao.avulsas },
+  { name: "Parceladas", value: proporcao.parceladas },
+  { name: "Fixas", value: proporcao.custos_fixos || 0 },
   ].filter(d => d.value > 0)
 
   const handleMesInicioChange = (e) => {
@@ -265,8 +266,9 @@ export default function Dashboard() {
                           </text>
                         )}
                       >
-                        <Cell fill="#FF9F40" />
-                        <Cell fill="#36A2EB" />
+                        {pieData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={PALETA_CORES[index % PALETA_CORES.length]} />
+                        ))}
                       </Pie>
                       <Tooltip 
                         formatter={(v) => fmt(v)} 

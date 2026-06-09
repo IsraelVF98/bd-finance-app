@@ -33,7 +33,8 @@ export default function Lancamentos() {
 
   const [despesa, setDespesa] = useState({
     mes: MESES[new Date().getMonth()], ano: anoAtual,
-    categoria: "", quem_pagou: "", descricao: "", valor: ""
+    categoria: "", quem_pagou: "", descricao: "", valor: "",
+    custo_fixo: false // ADICIONADO: controle do checkbox
   })
   const [receita, setReceita] = useState({
     mes: MESES[new Date().getMonth()], ano: anoAtual, fonte: "", valor: ""
@@ -51,7 +52,7 @@ export default function Lancamentos() {
       setPessoas(r.data); 
       if (r.data[0]) { 
         // Mantém categoria vazia para forçar a seleção manual
-        setDespesa(d => ({ ...d, categoria: "", quem_pagou: r.data[0] })); 
+        setDespesa(d => ({ ...d, categoria: "", quem_pagou: r.data[0], custo_fixo: false })); 
         setReceita(r => ({ ...r, fonte: r.data?.[0] || "" })) 
       } 
     })
@@ -83,11 +84,12 @@ export default function Lancamentos() {
         mes_ano: `${MESES_MAP[despesa.mes]}/${despesa.ano}`,
         categoria: despesa.categoria, descricao: despesa.descricao,
         valor: parseFloat(despesa.valor.replace(",", ".")),
-        quem_pagou: despesa.quem_pagou
+        quem_pagou: despesa.quem_pagou,
+        custo_fixo: despesa.custo_fixo // ADICIONADO: enviado ao backend
       })
       flash("ok", "Despesa adicionada!")
-      // Reseta o formulário e limpa a categoria para o próximo lançamento
-      setDespesa(d => ({ ...d, categoria: "", descricao: "", valor: "" }))
+      // Reseta o formulário, limpa a categoria e o checkbox
+      setDespesa(d => ({ ...d, categoria: "", descricao: "", valor: "", custo_fixo: false }))
       carregarLista()
     } catch (e) { flash("erro", e.response?.data?.detail || "Erro.") }
     finally { setLoading(false) }
@@ -147,17 +149,30 @@ export default function Lancamentos() {
               {ANOS.map(a => <option key={a}>{a}</option>)}
             </Select>
             <Select label="Categoria" value={despesa.categoria} onChange={e => setDespesa(d => ({ ...d, categoria: e.target.value }))}>
-              {/* Opção padrão placeholder desativada */}
               <option value="" disabled hidden>Selecione uma categoria...</option>
               {categorias.map(c => <option key={c}>{c}</option>)}
             </Select>
             <Select label="Pagante" value={despesa.quem_pagou} onChange={e => setDespesa(d => ({ ...d, quem_pagou: e.target.value }))}>
-              {/* Opção padrão placeholder desativada */}
               <option value="" disabled hidden>Selecione o pagante...</option>
               {pessoas.map(p => <option key={p}>{p}</option>)}
             </Select>
             <Input label="Descrição (opcional)" value={despesa.descricao} onChange={e => setDespesa(d => ({ ...d, descricao: e.target.value }))} placeholder="Ex: Conta de luz" />
             <Input label="Valor (R$)" value={despesa.valor} onChange={e => setDespesa(d => ({ ...d, valor: e.target.value }))} placeholder="0,00" />
+            
+            {/* ADICIONADO: Checkbox customizado de Custo Fixo */}
+            <div className="col-span-2 flex items-center gap-2.5 py-1">
+              <input 
+                type="checkbox" 
+                id="custo_fixo" 
+                checked={despesa.custo_fixo} 
+                onChange={e => setDespesa(d => ({ ...d, custo_fixo: e.target.checked }))}
+                className="w-4 h-4 rounded bg-bg border-border text-green focus:ring-green focus:ring-offset-bg cursor-pointer"
+              />
+              <label htmlFor="custo_fixo" className="text-muted text-xs font-medium cursor-pointer select-none">
+                Esta é uma despesa recorrente (Custo Fixo)
+              </label>
+            </div>
+
             <div className="col-span-2">
               <button onClick={salvarDespesa} disabled={loading}
                 className="w-full bg-green text-bg font-bold py-2.5 rounded-lg text-sm hover:bg-green/90 active:scale-95 transition-all disabled:opacity-50">
@@ -193,7 +208,11 @@ export default function Lancamentos() {
 
         <div className="flex gap-3 mb-4">
           <div className="flex bg-surface2 rounded-lg p-1 gap-1">
-            {[["avulsas","Despesas Avulsas"],["receitas","Receitas"]].map(([v,l]) => (
+            {[
+              ["avulsas","Despesas Avulsas"],
+              ["fixas", "Despesas Fixas"], // ADICIONADO: Aba para listar custos fixos
+              ["receitas","Receitas"]
+            ].map(([v,l]) => (
               <button key={v} onClick={() => setTipoLista(v)}
                 className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${tipoLista === v ? "bg-green text-bg" : "text-muted hover:text-white"}`}>
                 {l}
