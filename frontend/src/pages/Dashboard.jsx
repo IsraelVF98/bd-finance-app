@@ -20,12 +20,18 @@ const PALETA_CORES = [
   "#FFCD56", "#C9CBCC", "#FF5733", "#33FF57", "#3357FF"
 ]
 
+// Obtém o ano e o mês atual de forma dinâmica
+const hoje = new Date()
+const anoAtual = hoje.getFullYear().toString()
+const mesAtual = String(hoje.getMonth() + 1).padStart(2, "0")
+
 export default function Dashboard() {
-  const [anos, setAnos] = useState([])
+  // Inicializa a lista com o ano atual para evitar o seletor vazio ao carregar
+  const [anos, setAnos] = useState([anoAtual])
   const [pessoas, setPessoas] = useState([])
-  const [filtroAno, setFiltroAno] = useState("")
-  const [mesInicio, setMesInicio] = useState("01")
-  const [mesFim, setMesFim] = useState("12")
+  const [filtroAno, setFiltroAno] = useState(anoAtual)
+  const [mesInicio, setMesInicio] = useState(mesAtual)
+  const [mesFim, setMesFim] = useState(mesAtual)
   const [filtroPessoa, setFiltroPessoa] = useState("todos")
   const [resumo, setResumo] = useState({ receitas: 0, despesas: 0, saldo: 0 })
   const [evolucao, setEvolucao] = useState([])
@@ -39,9 +45,17 @@ export default function Dashboard() {
       api.get("/dashboard/anos-disponiveis"),
       api.get("/pessoas"),
     ]).then(([a, p]) => {
-      setAnos(a.data)
+      const listaAnos = a.data && a.data.length > 0 ? a.data : [anoAtual]
+      setAnos(listaAnos)
       setPessoas(p.data)
-      setFiltroAno(a.data[0] || new Date().getFullYear().toString())
+      
+      // Se a API retornar uma lista de anos e o ano atual não estiver nela, 
+      // selecionamos o primeiro ano disponível. Caso contrário, mantém o atual.
+      if (!listaAnos.includes(anoAtual)) {
+        setFiltroAno(listaAnos[0])
+      }
+    }).catch(err => {
+      console.error("Erro ao buscar dados iniciais", err)
     })
   }, [])
 
@@ -65,10 +79,12 @@ export default function Dashboard() {
       setCategorias(c.data)
       setProporcao(p.data)
       setExtrato(ex.data)
+    }).catch(err => {
+      console.error("Erro ao buscar dados do dashboard", err)
     }).finally(() => setLoading(false))
-  }, [filtroAno, mesInicio, mesFim, filtroPessoa]) // Corrigido: Dependências corretas sem o 'filtroMes' inexistente
+  }, [filtroAno, mesInicio, mesFim, filtroPessoa])
 
-  // Filtra a evolução mensal exibida no gráfico de acordo com o intervalo de meses selecionado
+  // Filtra a evolução do gráfico no frontend
   const evolucaoFiltrada = evolucao.filter(e => {
     const mes = e.mes_ano?.split("/")[0]
     return mes >= mesInicio && mes <= mesFim
@@ -81,7 +97,6 @@ export default function Dashboard() {
     { name: "Parceladas", value: proporcao.parceladas },
   ].filter(d => d.value > 0)
 
-  // Handlers para evitar que a data inicial seja maior que a data final
   const handleMesInicioChange = (e) => {
     const novoInicio = e.target.value
     setMesInicio(novoInicio)
@@ -176,7 +191,7 @@ export default function Dashboard() {
             <KpiCard label="Total Despesas" value={resumo.despesas} cor="#EF553B" sub="Saídas registradas" />
           </div>
 
-          {/* Gráfico evolução mensal filtrado */}
+          {/* Gráfico evolução mensal */}
           {evolucaoFiltrada.length > 0 && (
             <ChartCard title="Evolução Financeira Mensal">
               <div className="w-full h-56 md:h-72">
@@ -202,7 +217,6 @@ export default function Dashboard() {
 
           {/* Gráficos Secundários */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            
             {/* Gastos por categoria */}
             {categorias.length > 0 && (
               <ChartCard title="Gastos por Categoria">
