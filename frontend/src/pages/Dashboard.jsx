@@ -24,7 +24,7 @@ export default function Dashboard() {
   const [anos, setAnos] = useState([])
   const [pessoas, setPessoas] = useState([])
   const [filtroAno, setFiltroAno] = useState("")
-  const [filtroMes, setFiltroMes] = useState("todos")
+  const [filtroMes, setFiltroMes] = useState([])
   const [filtroPessoa, setFiltroPessoa] = useState("todos")
   const [resumo, setResumo] = useState({ receitas: 0, despesas: 0, saldo: 0 })
   const [evolucao, setEvolucao] = useState([])
@@ -47,7 +47,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (!filtroAno) return
     setLoading(true)
-    const params = { filtro_ano: filtroAno, filtro_mes: filtroMes, filtro_pessoa: filtroPessoa }
+    const params = { filtro_ano: filtroAno, filtro_mes: filtroMes.length > 0 ? filtroMes.join(",") : "todos", filtro_pessoa: filtroPessoa }
     Promise.all([
       api.get("/dashboard/resumo", { params }),
       api.get("/dashboard/evolucao-mensal", { params: { filtro_ano: filtroAno } }),
@@ -89,14 +89,14 @@ export default function Dashboard() {
             {anos.map(a => <option key={a}>{a}</option>)}
           </select>
 
-          <select value={filtroMes} onChange={e => setFiltroMes(e.target.value)}
-            className="bg-surface border border-border text-white text-sm px-3 py-1.5 rounded-lg focus:outline-none focus:border-green flex-1 md:flex-none">
-            <option value="todos">Ano Inteiro</option>
+          <select multiple value={filtroMes} onChange={(e) => {const selectedValues = Array.from(e.target.selectedOptions, option => option.value);setFiltroMes(selectedValues);}}
+            className="bg-surface border border-border text-white text-sm px-3 py-1.5 rounded-lg focus:outline-none focus:border-green flex-1 md:flex-none h-[34px]">
+            {}
             {MESES.filter(([cod]) => mesesDisponiveis.includes(cod)).map(([cod, nome]) => (
-              <option key={cod} value={cod}>{nome}</option>
+            <option key={cod} value={cod}>{nome}</option>
             ))}
           </select>
-
+          
           <select value={filtroPessoa} onChange={e => setFiltroPessoa(e.target.value)}
             className="bg-surface border border-border text-white text-sm px-3 py-1.5 rounded-lg focus:outline-none focus:border-green flex-1 md:flex-none">
             <option value="todos">Todos</option>
