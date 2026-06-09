@@ -42,7 +42,7 @@ def resumo(filtro_ano: str = None, filtro_mes: str = None, filtro_pessoa: str = 
             params_desp["ano"] = f"%/{filtro_ano}"
         if filtro_pessoa and filtro_pessoa != "todos":
             q_desp += " AND quem_pagou = :pessoa"
-            params_desp["persona"] = filtro_pessoa
+            params_desp["pessoa"] = filtro_pessoa
         desp_total = conn.execute(text(q_desp), params_desp).scalar()
 
     return {
