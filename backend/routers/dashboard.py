@@ -7,25 +7,21 @@ from auth import get_current_user
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
 @router.get("/resumo")
-def resumo(filtro_ano: str = None, filtro_mes: str = None, filtro_pessoa: str = None,
+def resumo(filtro_ano: str = None, mes_inicio: str = None, mes_fim: str = None, filtro_pessoa: str = None,
            user=Depends(get_current_user)):
     uid = user["id"]
-
-    # Monta filtros dinâmicos
-    filtro_mes_ano = None
-    if filtro_ano and filtro_mes and filtro_mes != "todos":
-        filtro_mes_ano = f"{filtro_mes}/{filtro_ano}"
 
     with engine.connect() as conn:
         # Receitas
         q_rec = "SELECT COALESCE(SUM(valor),0) FROM receitas WHERE usuario_id = :uid"
         params_rec = {"uid": uid}
-        if filtro_mes_ano:
-            q_rec += " AND mes_ano = :mes_ano"
-            params_rec["mes_ano"] = filtro_mes_ano
-        elif filtro_ano:
+        if filtro_ano:
             q_rec += " AND mes_ano LIKE :ano"
             params_rec["ano"] = f"%/{filtro_ano}"
+            if mes_inicio and mes_fim:
+                q_rec += " AND SPLIT_PART(mes_ano, '/', 1) BETWEEN :mes_inicio AND :mes_fim"
+                params_rec["mes_inicio"] = mes_inicio
+                params_rec["mes_fim"] = mes_fim
         if filtro_pessoa and filtro_pessoa != "todos":
             q_rec += " AND fonte = :pessoa"
             params_rec["pessoa"] = filtro_pessoa
@@ -34,12 +30,13 @@ def resumo(filtro_ano: str = None, filtro_mes: str = None, filtro_pessoa: str = 
         # Despesas
         q_desp = "SELECT COALESCE(SUM(valor),0) FROM despesas WHERE usuario_id = :uid"
         params_desp = {"uid": uid}
-        if filtro_mes_ano:
-            q_desp += " AND mes_ano = :mes_ano"
-            params_desp["mes_ano"] = filtro_mes_ano
-        elif filtro_ano:
+        if filtro_ano:
             q_desp += " AND mes_ano LIKE :ano"
             params_desp["ano"] = f"%/{filtro_ano}"
+            if mes_inicio and mes_fim:
+                q_desp += " AND SPLIT_PART(mes_ano, '/', 1) BETWEEN :mes_inicio AND :mes_fim"
+                params_desp["mes_inicio"] = mes_inicio
+                params_desp["mes_fim"] = mes_fim
         if filtro_pessoa and filtro_pessoa != "todos":
             q_desp += " AND quem_pagou = :pessoa"
             params_desp["pessoa"] = filtro_pessoa
@@ -76,18 +73,20 @@ def evolucao_mensal(filtro_ano: str = None, user=Depends(get_current_user)):
     }
 
 @router.get("/por-categoria")
-def por_categoria(filtro_ano: str = None, filtro_mes: str = None, filtro_pessoa: str = None,
+def por_categoria(filtro_ano: str = None, mes_inicio: str = None, mes_fim: str = None, filtro_pessoa: str = None,
                   user=Depends(get_current_user)):
     uid = user["id"]
     params = {"uid": uid}
     filtros = "WHERE usuario_id = :uid"
 
-    if filtro_ano and filtro_mes and filtro_mes != "todos":
-        filtros += " AND mes_ano = :mes_ano"
-        params["mes_ano"] = f"{filtro_mes}/{filtro_ano}"
-    elif filtro_ano:
+    if filtro_ano:
         filtros += " AND mes_ano LIKE :ano"
         params["ano"] = f"%/{filtro_ano}"
+        if mes_inicio and mes_fim:
+            filtros += " AND SPLIT_PART(mes_ano, '/', 1) BETWEEN :mes_inicio AND :mes_fim"
+            params["mes_inicio"] = mes_inicio
+            params["mes_fim"] = mes_fim
+            
     if filtro_pessoa and filtro_pessoa != "todos":
         filtros += " AND quem_pagou = :pessoa"
         params["pessoa"] = filtro_pessoa
@@ -101,18 +100,19 @@ def por_categoria(filtro_ano: str = None, filtro_mes: str = None, filtro_pessoa:
     return [{"categoria": r[0], "total": float(r[1])} for r in rows]
 
 @router.get("/avulsas-vs-parceladas")
-def avulsas_vs_parceladas(filtro_ano: str = None, filtro_mes: str = None,
+def avulsas_vs_parceladas(filtro_ano: str = None, mes_inicio: str = None, mes_fim: str = None,
                           user=Depends(get_current_user)):
     uid = user["id"]
     params = {"uid": uid}
     filtros = "WHERE usuario_id = :uid"
 
-    if filtro_ano and filtro_mes and filtro_mes != "todos":
-        filtros += " AND mes_ano = :mes_ano"
-        params["mes_ano"] = f"{filtro_mes}/{filtro_ano}"
-    elif filtro_ano:
+    if filtro_ano:
         filtros += " AND mes_ano LIKE :ano"
         params["ano"] = f"%/{filtro_ano}"
+        if mes_inicio and mes_fim:
+            filtros += " AND SPLIT_PART(mes_ano, '/', 1) BETWEEN :mes_inicio AND :mes_fim"
+            params["mes_inicio"] = mes_inicio
+            params["mes_fim"] = mes_fim
 
     with engine.connect() as conn:
         # Avulsas: Não são parceladas E não são custo fixo
@@ -140,18 +140,20 @@ def avulsas_vs_parceladas(filtro_ano: str = None, filtro_mes: str = None,
     }
 
 @router.get("/extrato")
-def extrato(filtro_ano: str = None, filtro_mes: str = None, filtro_pessoa: str = None,
+def extrato(filtro_ano: str = None, mes_inicio: str = None, mes_fim: str = None, filtro_pessoa: str = None,
             user=Depends(get_current_user)):
     uid = user["id"]
     params = {"uid": uid}
     filtros = "WHERE usuario_id = :uid"
 
-    if filtro_ano and filtro_mes and filtro_mes != "todos":
-        filtros += " AND mes_ano = :mes_ano"
-        params["mes_ano"] = f"{filtro_mes}/{filtro_ano}"
-    elif filtro_ano:
+    if filtro_ano:
         filtros += " AND mes_ano LIKE :ano"
         params["ano"] = f"%/{filtro_ano}"
+        if mes_inicio and mes_fim:
+            filtros += " AND SPLIT_PART(mes_ano, '/', 1) BETWEEN :mes_inicio AND :mes_fim"
+            params["mes_inicio"] = mes_inicio
+            params["mes_fim"] = mes_fim
+            
     if filtro_pessoa and filtro_pessoa != "todos":
         filtros += " AND quem_pagou = :pessoa"
         params["pessoa"] = filtro_pessoa
