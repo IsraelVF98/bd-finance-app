@@ -65,3 +65,25 @@ def criar_tabelas():
                 END IF;
             END $$;
         """))
+        # Tabela de Ativos de Investimento
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS investimentos (
+                id SERIAL PRIMARY KEY,
+                nome TEXT NOT NULL,
+                instituicao TEXT, -- ex: XP, Nubank, Inter
+                tipo TEXT,        -- ex: Renda Fixa, Ações, FIIs, Cripto
+                usuario_id INTEGER REFERENCES usuarios(id) ON DELETE CASCADE
+            );
+        """))
+        
+        # Tabela de Histórico de Movimentações
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS investimentos_movimentacoes (
+                id SERIAL PRIMARY KEY,
+                investimento_id INTEGER REFERENCES investimentos(id) ON DELETE CASCADE,
+                tipo_movimentacao TEXT NOT NULL, -- 'aporte', 'rendimento', 'saque'
+                valor REAL NOT NULL,
+                data_movimento DATE NOT NULL DEFAULT CURRENT_DATE,
+                usuario_id INTEGER REFERENCES usuarios(id) ON DELETE CASCADE
+            );
+        """))

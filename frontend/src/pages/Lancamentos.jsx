@@ -1,7 +1,7 @@
 // src/pages/Lancamentos.jsx
 import { useState, useEffect } from "react"
 import api from "../api/client"
-import { Trash2, Search } from "lucide-react"
+import { Trash2, Search, Plus, Minus } from "lucide-react"
 
 const MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"]
 const MESES_MAP = Object.fromEntries(MESES.map((m, i) => [m, String(i + 1).padStart(2, "0")]))
@@ -34,7 +34,7 @@ export default function Lancamentos() {
   const [despesa, setDespesa] = useState({
     mes: MESES[new Date().getMonth()], ano: anoAtual,
     categoria: "", quem_pagou: "", descricao: "", valor: "",
-    custo_fixo: false // ADICIONADO: controle do checkbox
+    custo_fixo: false
   })
   const [receita, setReceita] = useState({
     mes: MESES[new Date().getMonth()], ano: anoAtual, fonte: "", valor: ""
@@ -51,8 +51,8 @@ export default function Lancamentos() {
     api.get("/pessoas").then(r => { 
       setPessoas(r.data); 
       if (r.data[0]) { 
-        // Mantém categoria vazia para forçar a seleção manual
-        setDespesa(d => ({ ...d, categoria: "", quem_pagou: r.data[0], custo_fixo: false })); 
+        // UPGRADE: Não pre-selecionamos quem_pagou para forçar a exibição do placeholder
+        setDespesa(d => ({ ...d, categoria: "", quem_pagou: "", custo_fixo: false })); 
         setReceita(r => ({ ...r, fonte: r.data?.[0] || "" })) 
       } 
     })
@@ -73,7 +73,6 @@ export default function Lancamentos() {
   }
 
   const salvarDespesa = async () => {
-    // VALIDAÇÃO DO BUG: Impede o envio se não escolher uma categoria
     if (!despesa.categoria) { flash("erro", "Por favor, selecione uma categoria."); return }
     if (!despesa.valor || parseFloat(despesa.valor) <= 0) { flash("erro", "Valor deve ser maior que zero."); return }
     if (!despesa.quem_pagou) { flash("erro", "Selecione o pagante."); return }
@@ -85,11 +84,11 @@ export default function Lancamentos() {
         categoria: despesa.categoria, descricao: despesa.descricao,
         valor: parseFloat(despesa.valor.replace(",", ".")),
         quem_pagou: despesa.quem_pagou,
-        custo_fixo: despesa.custo_fixo // ADICIONADO: enviado ao backend
+        custo_fixo: despesa.custo_fixo
       })
       flash("ok", "Despesa adicionada!")
-      // Reseta o formulário, limpa a categoria e o checkbox
-      setDespesa(d => ({ ...d, categoria: "", descricao: "", valor: "", custo_fixo: false }))
+      // UPGRADE: Agora limpa também quem_pagou ao resetar o formulário
+      setDespesa(d => ({ ...d, categoria: "", quem_pagou: "", descricao: "", valor: "", custo_fixo: false }))
       carregarLista()
     } catch (e) { flash("erro", e.response?.data?.detail || "Erro.") }
     finally { setLoading(false) }
@@ -131,13 +130,27 @@ export default function Lancamentos() {
 
       {/* Formulário */}
       <div className="bg-surface border border-border rounded-xl p-5">
+        
+        {/* Abas de alternância */}
         <div className="flex bg-surface2 rounded-lg p-1 mb-5 w-fit gap-1">
-          {["despesa", "receita"].map(t => (
-            <button key={t} onClick={() => setAba(t)}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${aba === t ? "bg-green text-bg" : "text-muted hover:text-white"}`}>
-              {t === "despesa" ? "➖ Nova Despesa" : "➕ Nova Receita"}
-            </button>
-          ))}
+          <button 
+            onClick={() => setAba("despesa")}
+            className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
+              aba === "despesa" ? "bg-green text-bg font-bold" : "text-muted hover:text-white"
+            }`}
+          >
+            <Minus size={14} />
+            Nova Despesa
+          </button>
+          <button 
+            onClick={() => setAba("receita")}
+            className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
+              aba === "receita" ? "bg-green text-bg font-bold" : "text-muted hover:text-white"
+            }`}
+          >
+            <Plus size={14} />
+            Nova Receita
+          </button>
         </div>
 
         {aba === "despesa" ? (
@@ -153,13 +166,13 @@ export default function Lancamentos() {
               {categorias.map(c => <option key={c}>{c}</option>)}
             </Select>
             <Select label="Pagante" value={despesa.quem_pagou} onChange={e => setDespesa(d => ({ ...d, quem_pagou: e.target.value }))}>
+              {/* UPGRADE: Agora o placeholder aparece perfeitamente e é obrigatório antes de enviar */}
               <option value="" disabled hidden>Selecione o pagante...</option>
               {pessoas.map(p => <option key={p}>{p}</option>)}
             </Select>
             <Input label="Descrição (opcional)" value={despesa.descricao} onChange={e => setDespesa(d => ({ ...d, descricao: e.target.value }))} placeholder="Ex: Conta de luz" />
             <Input label="Valor (R$)" value={despesa.valor} onChange={e => setDespesa(d => ({ ...d, valor: e.target.value }))} placeholder="0,00" />
             
-            {/* ADICIONADO: Checkbox customizado de Custo Fixo */}
             <div className="col-span-2 flex items-center gap-2.5 py-1">
               <input 
                 type="checkbox" 
@@ -210,7 +223,7 @@ export default function Lancamentos() {
           <div className="flex bg-surface2 rounded-lg p-1 gap-1">
             {[
               ["avulsas","Despesas Avulsas"],
-              ["fixas", "Despesas Fixas"], // ADICIONADO: Aba para listar custos fixos
+              ["fixos", "Despesas Fixas"],
               ["receitas","Receitas"]
             ].map(([v,l]) => (
               <button key={v} onClick={() => setTipoLista(v)}

@@ -180,6 +180,8 @@ def anos_disponiveis(user=Depends(get_current_user)):
     anos = sorted(set([r[0] for r in desp] + [r[0] for r in rec]), reverse=True)
     return anos if anos else [str(__import__("datetime").datetime.now().year)]
 
+# backend/routers/dashboard.py (Apenas a rota /tabelao no final do arquivo)
+
 @router.get("/tabelao")
 def tabelao(data_inicio: str = None, data_fim: str = None,
             user=Depends(get_current_user)):
@@ -193,7 +195,7 @@ def tabelao(data_inicio: str = None, data_fim: str = None,
     start_val = format_to_sortable(data_inicio)
     end_val = format_to_sortable(data_fim)
 
-    # Gera a série de meses com TO_DATE com segurança, pois os parâmetros do frontend são garantidamente válidos
+    # Gera a série de meses com TO_DATE com segurança
     query_meses = """
         SELECT TO_CHAR(m, 'MM/YYYY') 
         FROM generate_series(
@@ -207,16 +209,25 @@ def tabelao(data_inicio: str = None, data_fim: str = None,
         rows_meses = conn.execute(text(query_meses), {"data_inicio": data_inicio, "data_fim": data_fim}).fetchall()
         meses_selecionados = [r[0] for r in rows_meses]
 
-        p_desp = conn.execute(text(
-            "SELECT DISTINCT quem_pagou FROM despesas WHERE usuario_id = :uid AND quem_pagou IS NOT NULL"
-        ), {"uid": uid}).fetchall()
-        p_rec = conn.execute(text(
-            "SELECT DISTINCT fonte FROM receitas WHERE usuario_id = :uid AND fonte IS NOT NULL"
+        # UPGRADE CRÍTICO: Busca as pessoas oficiais cadastradas para esta conta na tabela 'pessoas'
+        rows_pessoas = conn.execute(text(
+            "SELECT nome FROM pessoas WHERE usuario_id = :uid ORDER BY nome"
         ), {"uid": uid}).fetchall()
         
-        pessoas = sorted(list(set([r[0] for r in p_desp] + [r[0] for r in p_rec])))
+        pessoas = [r[0] for r in rows_pessoas]
         
-        # Filtra usando a concatenação de strings segura contra falhas/nulos
+        # Fallback de segurança: Caso a tabela 'pessoas' esteja vazia por algum motivo,
+        # ela busca as pessoas que possuem lançamentos (como antes)
+        if not pessoas:
+            p_desp = conn.execute(text(
+                "SELECT DISTINCT quem_pagou FROM despesas WHERE usuario_id = :uid AND quem_pagou IS NOT NULL"
+            ), {"uid": uid}).fetchall()
+            p_rec = conn.execute(text(
+                "SELECT DISTINCT fonte FROM receitas WHERE usuario_id = :uid AND fonte IS NOT NULL"
+            ), {"uid": uid}).fetchall()
+            pessoas = sorted(list(set([r[0] for r in p_desp] + [r[0] for r in p_rec])))
+
+        # Busca todas as receitas agrupadas por mes_ano e pessoa
         query_rec = """
             SELECT mes_ano, fonte, SUM(valor) as total 
             FROM receitas 
@@ -225,6 +236,7 @@ def tabelao(data_inicio: str = None, data_fim: str = None,
         """
         rows_rec = conn.execute(text(query_rec), {"uid": uid, "start_val": start_val, "end_val": end_val}).fetchall()
         
+        # Busca todas as despesas agrupadas por mes_ano e quem pagou
         query_desp = """
             SELECT mes_ano, quem_pagou, SUM(valor) as total 
             FROM despesas 

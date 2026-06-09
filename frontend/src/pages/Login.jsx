@@ -1,8 +1,10 @@
 // src/pages/Login.jsx
+import logo from "../assets/logo.png"
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
 import api from "../api/client"
+import { Lock, UserPlus } from "lucide-react" // UPGRADE: Importando os ícones da biblioteca Lucide
 
 export default function Login() {
   const [aba, setAba] = useState("login")
@@ -44,25 +46,42 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-bg flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <span className="text-green font-bold text-4xl tracking-tight">B&D</span>
-          <span className="text-white font-bold text-4xl tracking-tight"> Finance</span>
+        
+        {/* Logo alinhada de forma compacta e com alto contraste */}
+        <div className="flex flex-col items-center justify-center text-center mb-4">
+          <div className="flex items-center justify-center gap-4">
+            <img src={logo} alt="B&D Finance Logo" className="w-20 h-20 object-contain" />
+            <div className="text-4xl font-bold tracking-tight">
+              <span className="text-green">B&D</span>
+              <span className="text-white"> Finance</span>
+            </div>
+          </div>
           <p className="text-subtle text-sm mt-2">Controle financeiro do lar</p>
         </div>
 
         {/* Card */}
         <div className="bg-surface border border-border rounded-2xl p-6">
-          {/* Abas */}
-          <div className="flex bg-surface2 rounded-lg p-1 mb-6">
-            {["login", "register"].map(t => (
-              <button key={t} onClick={() => { setAba(t); setErro(""); setSucesso("") }}
-                className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${
-                  aba === t ? "bg-green text-bg" : "text-muted hover:text-white"
-                }`}>
-                {t === "login" ? "🔒 Entrar" : "📝 Criar Conta"}
-              </button>
-            ))}
+          
+          {/* UPGRADE: Abas de Login/Registro com alinhamento e ícones Lucide */}
+          <div className="flex bg-surface2 rounded-lg p-1 mb-6 gap-1">
+            {["login", "register"].map(t => {
+              const isLogin = t === "login"
+              const Icon = isLogin ? Lock : UserPlus
+              const label = isLogin ? "Entrar" : "Criar Conta"
+
+              return (
+                <button 
+                  key={t} 
+                  onClick={() => { setAba(t); setErro(""); setSucesso("") }}
+                  className={`flex-1 py-2.5 rounded-md text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+                    aba === t ? "bg-green text-bg font-bold" : "text-muted hover:text-white"
+                  }`}
+                >
+                  <Icon size={14} />
+                  <span>{label}</span>
+                </button>
+              )
+            })}
           </div>
 
           {erro && <p className="text-red text-sm mb-4 bg-red/10 px-3 py-2 rounded-lg">{erro}</p>}

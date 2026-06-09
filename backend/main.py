@@ -2,7 +2,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from database import criar_tabelas
-from routers import auth, dashboard, lancamentos, parcelamentos, configuracoes
+# UPGRADE: Importado o módulo investimentos de dentro da pasta de rotas
+from routers import auth, dashboard, lancamentos, parcelamentos, configuracoes, investimentos
 
 app = FastAPI(title="B&D Finance API")
 
@@ -21,6 +22,8 @@ app.include_router(dashboard.router)
 app.include_router(lancamentos.router)
 app.include_router(parcelamentos.router)
 app.include_router(configuracoes.router)
+# UPGRADE: Ativando as rotas de investimentos no FastAPI
+app.include_router(investimentos.router)
 
 @app.get("/")
 def root():

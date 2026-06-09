@@ -8,6 +8,7 @@ import Lancamentos from "./pages/Lancamentos"
 import Parcelamentos from "./pages/Parcelamentos"
 import Categorias from "./pages/Categorias"
 import Pessoas from "./pages/Pessoas"
+import Investimentos from "./pages/Investimentos" // UPGRADE: Importando a nova página de Investimentos
 
 function PrivateRoute({ children }) {
   const { logado } = useAuth()
@@ -25,6 +26,10 @@ export default function App() {
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="lancamentos" element={<Lancamentos />} />
             <Route path="parcelamentos" element={<Parcelamentos />} />
+            
+            {/* UPGRADE: Registrando a rota de Investimentos dentro do Layout privado */}
+            <Route path="investimentos" element={<Investimentos />} />
+            
             <Route path="categorias" element={<Categorias />} />
             <Route path="pessoas" element={<Pessoas />} />
           </Route>
