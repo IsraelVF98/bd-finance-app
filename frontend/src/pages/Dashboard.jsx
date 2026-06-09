@@ -14,19 +14,16 @@ const MESES = [
   ["09","Set"],["10","Out"],["11","Nov"],["12","Dez"],
 ]
 
-// Paleta de cores moderna e viva
 const PALETA_CORES = [
   "#36A2EB", "#FF6384", "#FF9F40", "#4BC0C0", "#9966FF", 
   "#FFCD56", "#C9CBCC", "#FF5733", "#33FF57", "#3357FF"
 ]
 
-// Obtém o ano e o mês atual de forma dinâmica
 const hoje = new Date()
 const anoAtual = hoje.getFullYear().toString()
 const mesAtual = String(hoje.getMonth() + 1).padStart(2, "0")
 
 export default function Dashboard() {
-  // Inicializa a lista com o ano atual para evitar o seletor vazio ao carregar
   const [anos, setAnos] = useState([anoAtual])
   const [pessoas, setPessoas] = useState([])
   const [filtroAno, setFiltroAno] = useState(anoAtual)
@@ -36,7 +33,7 @@ export default function Dashboard() {
   const [resumo, setResumo] = useState({ receitas: 0, despesas: 0, saldo: 0 })
   const [evolucao, setEvolucao] = useState([])
   const [categorias, setCategorias] = useState([])
-  cconst [proporcao, setProporcao] = useState({ avulsas: 0, parceladas: 0, custos_fixos: 0 })
+  const [proporcao, setProporcao] = useState({ avulsas: 0, parceladas: 0, custos_fixos: 0 })
   const [extrato, setExtrato] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -48,9 +45,6 @@ export default function Dashboard() {
       const listaAnos = a.data && a.data.length > 0 ? a.data : [anoAtual]
       setAnos(listaAnos)
       setPessoas(p.data)
-      
-      // Se a API retornar uma lista de anos e o ano atual não estiver nela, 
-      // selecionamos o primeiro ano disponível. Caso contrário, mantém o atual.
       if (!listaAnos.includes(anoAtual)) {
         setFiltroAno(listaAnos[0])
       }
@@ -84,18 +78,19 @@ export default function Dashboard() {
     }).finally(() => setLoading(false))
   }, [filtroAno, mesInicio, mesFim, filtroPessoa])
 
-  // Filtra a evolução do gráfico no frontend
+  // Corrige o bug numérico da comparação de meses
   const evolucaoFiltrada = evolucao.filter(e => {
-    const mes = e.mes_ano?.split("/")[0]
-    return mes >= mesInicio && mes <= mesFim
+    const mes = parseInt(e.mes_ano?.split("/")[0], 10)
+    return mes >= parseInt(mesInicio, 10) && mes <= parseInt(mesFim, 10)
   })
 
   const saldoPositivo = resumo.saldo >= 0
 
+  // Estrutura o gráfico de rosca dinamicamente para os 3 tipos
   const pieData = [
-  { name: "Avulsas", value: proporcao.avulsas },
-  { name: "Parceladas", value: proporcao.parceladas },
-  { name: "Fixas", value: proporcao.custos_fixos || 0 },
+    { name: "Avulsas", value: proporcao.avulsas },
+    { name: "Parceladas", value: proporcao.parceladas },
+    { name: "Fixas", value: proporcao.custos_fixos || 0 },
   ].filter(d => d.value > 0)
 
   const handleMesInicioChange = (e) => {
@@ -116,13 +111,10 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Topo Responsivo */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-white">Dashboard</h1>
 
-        {/* Filtros */}
         <div className="flex flex-wrap items-center gap-3">
-          {/* Ano */}
           <select
             value={filtroAno}
             onChange={e => setFiltroAno(e.target.value)}
@@ -135,7 +127,6 @@ export default function Dashboard() {
             ))}
           </select>
 
-          {/* Mês Inicial */}
           <select
             value={mesInicio}
             onChange={handleMesInicioChange}
@@ -150,7 +141,6 @@ export default function Dashboard() {
 
           <span className="text-gray-400 text-sm font-medium">até</span>
 
-          {/* Mês Final */}
           <select
             value={mesFim}
             onChange={handleMesFimChange}
@@ -163,7 +153,6 @@ export default function Dashboard() {
             ))}
           </select>
 
-          {/* Pessoa */}
           <select
             value={filtroPessoa}
             onChange={e => setFiltroPessoa(e.target.value)}
@@ -183,7 +172,6 @@ export default function Dashboard() {
         <div className="text-center text-white py-10">Carregando dados...</div>
       ) : (
         <>
-          {/* KPIs Responsivos */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <KpiCard label="Saldo Líquido" value={resumo.saldo}
               cor={saldoPositivo ? "#00E676" : "#EF553B"}
@@ -192,7 +180,6 @@ export default function Dashboard() {
             <KpiCard label="Total Despesas" value={resumo.despesas} cor="#EF553B" sub="Saídas registradas" />
           </div>
 
-          {/* Gráfico evolução mensal */}
           {evolucaoFiltrada.length > 0 && (
             <ChartCard title="Evolução Financeira Mensal">
               <div className="w-full h-56 md:h-72">
@@ -216,9 +203,7 @@ export default function Dashboard() {
             </ChartCard>
           )}
 
-          {/* Gráficos Secundários */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Gastos por categoria */}
             {categorias.length > 0 && (
               <ChartCard title="Gastos por Categoria">
                 <div className="w-full h-56 md:h-72">
@@ -244,7 +229,6 @@ export default function Dashboard() {
               </ChartCard>
             )}
 
-            {/* Avulsas vs Parceladas */}
             {pieData.length > 0 && (
               <ChartCard title="Avulsas vs. Parceladas">
                 <div className="w-full h-56 md:h-72">
@@ -283,7 +267,6 @@ export default function Dashboard() {
             )}
           </div>
 
-          {/* Extrato de Despesas */}
           {extrato.length > 0 && (
             <ChartCard title="Extrato de Despesas">
               <div className="overflow-x-auto -mx-5 px-5">
