@@ -6,22 +6,28 @@ from auth import get_current_user
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
+# Função auxiliar para converter "MM/YYYY" em "YYYYMM" ordenável e seguro
+def format_to_sortable(data_str: str) -> str:
+    if not data_str or "/" not in data_str:
+        return "000000"
+    partes = data_str.split("/")
+    return f"{partes[1]}{partes[0].zfill(2)}"
+
 @router.get("/resumo")
-def resumo(filtro_ano: str = None, mes_inicio: str = None, mes_fim: str = None, filtro_pessoa: str = None,
+def resumo(data_inicio: str = None, data_fim: str = None, filtro_pessoa: str = None,
            user=Depends(get_current_user)):
     uid = user["id"]
+    start_val = format_to_sortable(data_inicio)
+    end_val = format_to_sortable(data_fim)
 
     with engine.connect() as conn:
         # Receitas
         q_rec = "SELECT COALESCE(SUM(valor),0) FROM receitas WHERE usuario_id = :uid"
         params_rec = {"uid": uid}
-        if filtro_ano:
-            q_rec += " AND mes_ano LIKE :ano"
-            params_rec["ano"] = f"%/{filtro_ano}"
-            if mes_inicio and mes_fim:
-                q_rec += " AND CAST(SPLIT_PART(mes_ano, '/', 1) AS INTEGER) BETWEEN CAST(:mes_inicio AS INTEGER) AND CAST(:mes_fim AS INTEGER)"
-                params_rec["mes_inicio"] = mes_inicio
-                params_rec["mes_fim"] = mes_fim
+        if data_inicio and data_fim:
+            q_rec += " AND SPLIT_PART(mes_ano, '/', 2) || SPLIT_PART(mes_ano, '/', 1) BETWEEN :start_val AND :end_val"
+            params_rec["start_val"] = start_val
+            params_rec["end_val"] = end_val
         if filtro_pessoa and filtro_pessoa != "todos":
             q_rec += " AND fonte = :pessoa"
             params_rec["pessoa"] = filtro_pessoa
@@ -30,13 +36,10 @@ def resumo(filtro_ano: str = None, mes_inicio: str = None, mes_fim: str = None, 
         # Despesas
         q_desp = "SELECT COALESCE(SUM(valor),0) FROM despesas WHERE usuario_id = :uid"
         params_desp = {"uid": uid}
-        if filtro_ano:
-            q_desp += " AND mes_ano LIKE :ano"
-            params_desp["ano"] = f"%/{filtro_ano}"
-            if mes_inicio and mes_fim:
-                q_desp += " AND CAST(SPLIT_PART(mes_ano, '/', 1) AS INTEGER) BETWEEN CAST(:mes_inicio AS INTEGER) AND CAST(:mes_fim AS INTEGER)"
-                params_desp["mes_inicio"] = mes_inicio
-                params_desp["mes_fim"] = mes_fim
+        if data_inicio and data_fim:
+            q_desp += " AND SPLIT_PART(mes_ano, '/', 2) || SPLIT_PART(mes_ano, '/', 1) BETWEEN :start_val AND :end_val"
+            params_desp["start_val"] = start_val
+            params_desp["end_val"] = end_val
         if filtro_pessoa and filtro_pessoa != "todos":
             q_desp += " AND quem_pagou = :pessoa"
             params_desp["pessoa"] = filtro_pessoa
@@ -49,22 +52,29 @@ def resumo(filtro_ano: str = None, mes_inicio: str = None, mes_fim: str = None, 
     }
 
 @router.get("/evolucao-mensal")
-def evolucao_mensal(filtro_ano: str = None, user=Depends(get_current_user)):
+def evolucao_mensal(data_inicio: str = None, data_fim: str = None, user=Depends(get_current_user)):
     uid = user["id"]
+    start_val = format_to_sortable(data_inicio)
+    end_val = format_to_sortable(data_fim)
+    
     with engine.connect() as conn:
         params = {"uid": uid}
-        ano_filtro = f" AND mes_ano LIKE '%/{filtro_ano}'" if filtro_ano else ""
+        filtro_data = ""
+        if data_inicio and data_fim:
+            filtro_data = " AND SPLIT_PART(mes_ano, '/', 2) || SPLIT_PART(mes_ano, '/', 1) BETWEEN :start_val AND :end_val"
+            params["start_val"] = start_val
+            params["end_val"] = end_val
 
         receitas = conn.execute(text(f"""
             SELECT mes_ano, SUM(valor) as total FROM receitas
-            WHERE usuario_id = :uid {ano_filtro}
-            GROUP BY mes_ano ORDER BY mes_ano
+            WHERE usuario_id = :uid {filtro_data}
+            GROUP BY mes_ano ORDER BY SPLIT_PART(mes_ano, '/', 2) || SPLIT_PART(mes_ano, '/', 1)
         """), params).fetchall()
 
         despesas = conn.execute(text(f"""
             SELECT mes_ano, SUM(valor) as total FROM despesas
-            WHERE usuario_id = :uid {ano_filtro}
-            GROUP BY mes_ano ORDER BY mes_ano
+            WHERE usuario_id = :uid {filtro_data}
+            GROUP BY mes_ano ORDER BY SPLIT_PART(mes_ano, '/', 2) || SPLIT_PART(mes_ano, '/', 1)
         """), params).fetchall()
 
     return {
@@ -73,19 +83,16 @@ def evolucao_mensal(filtro_ano: str = None, user=Depends(get_current_user)):
     }
 
 @router.get("/por-categoria")
-def por_categoria(filtro_ano: str = None, mes_inicio: str = None, mes_fim: str = None, filtro_pessoa: str = None,
+def por_categoria(data_inicio: str = None, data_fim: str = None, filtro_pessoa: str = None,
                   user=Depends(get_current_user)):
     uid = user["id"]
     params = {"uid": uid}
     filtros = "WHERE usuario_id = :uid"
 
-    if filtro_ano:
-        filtros += " AND mes_ano LIKE :ano"
-        params["ano"] = f"%/{filtro_ano}"
-        if mes_inicio and mes_fim:
-            filtros += " AND CAST(SPLIT_PART(mes_ano, '/', 1) AS INTEGER) BETWEEN CAST(:mes_inicio AS INTEGER) AND CAST(:mes_fim AS INTEGER)"
-            params["mes_inicio"] = mes_inicio
-            params["mes_fim"] = mes_fim
+    if data_inicio and data_fim:
+        filtros += " AND SPLIT_PART(mes_ano, '/', 2) || SPLIT_PART(mes_ano, '/', 1) BETWEEN :start_val AND :end_val"
+        params["start_val"] = format_to_sortable(data_inicio)
+        params["end_val"] = format_to_sortable(data_fim)
             
     if filtro_pessoa and filtro_pessoa != "todos":
         filtros += " AND quem_pagou = :pessoa"
@@ -100,34 +107,28 @@ def por_categoria(filtro_ano: str = None, mes_inicio: str = None, mes_fim: str =
     return [{"categoria": r[0], "total": float(r[1])} for r in rows]
 
 @router.get("/avulsas-vs-parceladas")
-def avulsas_vs_parceladas(filtro_ano: str = None, mes_inicio: str = None, mes_fim: str = None,
+def avulsas_vs_parceladas(data_inicio: str = None, data_fim: str = None,
                           user=Depends(get_current_user)):
     uid = user["id"]
     params = {"uid": uid}
     filtros = "WHERE usuario_id = :uid"
 
-    if filtro_ano:
-        filtros += " AND mes_ano LIKE :ano"
-        params["ano"] = f"%/{filtro_ano}"
-        if mes_inicio and mes_fim:
-            filtros += " AND CAST(SPLIT_PART(mes_ano, '/', 1) AS INTEGER) BETWEEN CAST(:mes_inicio AS INTEGER) AND CAST(:mes_fim AS INTEGER)"
-            params["mes_inicio"] = mes_inicio
-            params["mes_fim"] = mes_fim
+    if data_inicio and data_fim:
+        filtros += " AND SPLIT_PART(mes_ano, '/', 2) || SPLIT_PART(mes_ano, '/', 1) BETWEEN :start_val AND :end_val"
+        params["start_val"] = format_to_sortable(data_inicio)
+        params["end_val"] = format_to_sortable(data_fim)
 
     with engine.connect() as conn:
-        # Avulsas: Não são parceladas E não são custo fixo
         avulsas = conn.execute(text(f"""
             SELECT COALESCE(SUM(valor),0) FROM despesas
             {filtros} AND id_parcelamento IS NULL AND (custo_fixo IS NULL OR custo_fixo = FALSE)
         """), params).scalar()
 
-        # Parceladas: Possuem um ID de parcelamento atrelado
         parceladas = conn.execute(text(f"""
             SELECT COALESCE(SUM(valor),0) FROM despesas
             {filtros} AND id_parcelamento IS NOT NULL
         """), params).scalar()
 
-        # Custos Fixos: Marcadas explicitamente como custo fixo
         custos_fixos = conn.execute(text(f"""
             SELECT COALESCE(SUM(valor),0) FROM despesas
             {filtros} AND custo_fixo = TRUE
@@ -140,19 +141,16 @@ def avulsas_vs_parceladas(filtro_ano: str = None, mes_inicio: str = None, mes_fi
     }
 
 @router.get("/extrato")
-def extrato(filtro_ano: str = None, mes_inicio: str = None, mes_fim: str = None, filtro_pessoa: str = None,
+def extrato(data_inicio: str = None, data_fim: str = None, filtro_pessoa: str = None,
             user=Depends(get_current_user)):
     uid = user["id"]
     params = {"uid": uid}
     filtros = "WHERE usuario_id = :uid"
 
-    if filtro_ano:
-        filtros += " AND mes_ano LIKE :ano"
-        params["ano"] = f"%/{filtro_ano}"
-        if mes_inicio and mes_fim:
-            filtros += " AND CAST(SPLIT_PART(mes_ano, '/', 1) AS INTEGER) BETWEEN CAST(:mes_inicio AS INTEGER) AND CAST(:mes_fim AS INTEGER)"
-            params["mes_inicio"] = mes_inicio
-            params["mes_fim"] = mes_fim
+    if data_inicio and data_fim:
+        filtros += " AND SPLIT_PART(mes_ano, '/', 2) || SPLIT_PART(mes_ano, '/', 1) BETWEEN :start_val AND :end_val"
+        params["start_val"] = format_to_sortable(data_inicio)
+        params["end_val"] = format_to_sortable(data_fim)
             
     if filtro_pessoa and filtro_pessoa != "todos":
         filtros += " AND quem_pagou = :pessoa"
@@ -161,7 +159,8 @@ def extrato(filtro_ano: str = None, mes_inicio: str = None, mes_fim: str = None,
     with engine.connect() as conn:
         rows = conn.execute(text(f"""
             SELECT id, mes_ano, categoria, descricao, valor, quem_pagou
-            FROM despesas {filtros} ORDER BY id DESC
+            FROM despesas {filtros} 
+            ORDER BY SPLIT_PART(mes_ano, '/', 2) || SPLIT_PART(mes_ano, '/', 1) DESC, id DESC
         """), params).fetchall()
 
     return [{"id": r[0], "mes_ano": r[1], "categoria": r[2],
@@ -181,22 +180,33 @@ def anos_disponiveis(user=Depends(get_current_user)):
     anos = sorted(set([r[0] for r in desp] + [r[0] for r in rec]), reverse=True)
     return anos if anos else [str(__import__("datetime").datetime.now().year)]
 
-# UPGRADE: Rota de geração do "Tabelão" consolidado
 @router.get("/tabelao")
-def tabelao(filtro_ano: str = None, mes_inicio: str = "01", mes_fim: str = "12",
+def tabelao(data_inicio: str = None, data_fim: str = None,
             user=Depends(get_current_user)):
     uid = user["id"]
-    if not filtro_ano:
-        filtro_ano = str(__import__("datetime").datetime.now().year)
-        
-    mes_inicio_int = int(mes_inicio or "1")
-    mes_fim_int = int(mes_fim or "12")
     
-    # Gera a lista de meses dentro do intervalo de filtros selecionados
-    meses_selecionados = [f"{str(m).zfill(2)}/{filtro_ano}" for m in range(mes_inicio_int, mes_fim_int + 1)]
+    if not data_inicio or not data_fim:
+        ano_atual = str(__import__("datetime").datetime.now().year)
+        data_inicio = f"01/{ano_atual}"
+        data_fim = f"12/{ano_atual}"
+
+    start_val = format_to_sortable(data_inicio)
+    end_val = format_to_sortable(data_fim)
+
+    # Gera a série de meses com TO_DATE com segurança, pois os parâmetros do frontend são garantidamente válidos
+    query_meses = """
+        SELECT TO_CHAR(m, 'MM/YYYY') 
+        FROM generate_series(
+            TO_DATE(:data_inicio, 'MM/YYYY'), 
+            TO_DATE(:data_fim, 'MM/YYYY'), 
+            '1 month'::interval
+        ) m
+    """
     
     with engine.connect() as conn:
-        # Busca a lista dinâmica de pessoas/membros registrados nas contas deste usuário
+        rows_meses = conn.execute(text(query_meses), {"data_inicio": data_inicio, "data_fim": data_fim}).fetchall()
+        meses_selecionados = [r[0] for r in rows_meses]
+
         p_desp = conn.execute(text(
             "SELECT DISTINCT quem_pagou FROM despesas WHERE usuario_id = :uid AND quem_pagou IS NOT NULL"
         ), {"uid": uid}).fetchall()
@@ -206,25 +216,23 @@ def tabelao(filtro_ano: str = None, mes_inicio: str = "01", mes_fim: str = "12",
         
         pessoas = sorted(list(set([r[0] for r in p_desp] + [r[0] for r in p_rec])))
         
-        # Busca todas as receitas agrupadas por mes_ano e pessoa
+        # Filtra usando a concatenação de strings segura contra falhas/nulos
         query_rec = """
             SELECT mes_ano, fonte, SUM(valor) as total 
             FROM receitas 
-            WHERE usuario_id = :uid AND mes_ano LIKE :ano
+            WHERE usuario_id = :uid AND SPLIT_PART(mes_ano, '/', 2) || SPLIT_PART(mes_ano, '/', 1) BETWEEN :start_val AND :end_val
             GROUP BY mes_ano, fonte
         """
-        rows_rec = conn.execute(text(query_rec), {"uid": uid, "ano": f"%/{filtro_ano}"}).fetchall()
+        rows_rec = conn.execute(text(query_rec), {"uid": uid, "start_val": start_val, "end_val": end_val}).fetchall()
         
-        # Busca todas as despesas agrupadas por mes_ano e quem pagou
         query_desp = """
             SELECT mes_ano, quem_pagou, SUM(valor) as total 
             FROM despesas 
-            WHERE usuario_id = :uid AND mes_ano LIKE :ano
+            WHERE usuario_id = :uid AND SPLIT_PART(mes_ano, '/', 2) || SPLIT_PART(mes_ano, '/', 1) BETWEEN :start_val AND :end_val
             GROUP BY mes_ano, quem_pagou
         """
-        rows_desp = conn.execute(text(query_desp), {"uid": uid, "ano": f"%/{filtro_ano}"}).fetchall()
+        rows_desp = conn.execute(text(query_desp), {"uid": uid, "start_val": start_val, "end_val": end_val}).fetchall()
 
-    # Mapeia em estruturas chave-valor em memória
     mapa_receitas = {(r[0], r[1]): float(r[2]) for r in rows_rec}
     mapa_despesas = {(d[0], d[1]): float(d[2]) for d in rows_desp}
 

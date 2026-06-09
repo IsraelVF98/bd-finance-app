@@ -1,0 +1,18 @@
+# Cache do Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ambientes Virtuais (Venv)
+.venv/
+venv/
+env/
+ENV/
+
+# Credenciais e Senhas (Segurança)
+.env
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
