@@ -56,7 +56,6 @@ export default function Login() {
               <span className="text-white"> Finance</span>
             </div>
           </div>
-          <p className="text-subtle text-sm mt-2">Controle financeiro do lar</p>
         </div>
 
         {/* Card */}
