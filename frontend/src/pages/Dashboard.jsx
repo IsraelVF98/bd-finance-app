@@ -1,12 +1,17 @@
 // src/pages/Dashboard.jsx
-import { useState, useEffect } from "react"
+import { useState, useEffect, Fragment } from "react"
 import api from "../api/client"
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from "recharts"
 
-const fmt = (v) => `R$ ${Number(v).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
+// Formatação profissional de moedas (ex: -R$ 300,00 para valores negativos)
+const fmt = (v) => {
+  const val = Number(v)
+  const formatado = Math.abs(val).toLocaleString("pt-BR", { minimumFractionDigits: 2 })
+  return val < 0 ? `-R$ ${formatado}` : `R$ ${formatado}`
+}
 
 const MESES = [
   ["01","Jan"],["02","Fev"],["03","Mar"],["04","Abr"],
@@ -35,6 +40,7 @@ export default function Dashboard() {
   const [categorias, setCategorias] = useState([])
   const [proporcao, setProporcao] = useState({ avulsas: 0, parceladas: 0, custos_fixos: 0 })
   const [extrato, setExtrato] = useState([])
+  const [tabelaoData, setTabelaoData] = useState(null) // UPGRADE: Dados do tabelão dinâmico
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -58,13 +64,21 @@ export default function Dashboard() {
     setLoading(true)
     const params = { filtro_ano: filtroAno, mes_inicio: mesInicio, mes_fim: mesFim, filtro_pessoa: filtroPessoa }
     
-    Promise.all([
+    // Lista de requisições padrão
+    const promessas = [
       api.get("/dashboard/resumo", { params }),
       api.get("/dashboard/evolucao-mensal", { params: { filtro_ano: filtroAno } }),
       api.get("/dashboard/por-categoria", { params }),
       api.get("/dashboard/avulsas-vs-parceladas", { params }),
       api.get("/dashboard/extrato", { params }),
-    ]).then(([r, e, c, p, ex]) => {
+    ]
+
+    // UPGRADE: Busca o tabelão apenas se 'Todas as pessoas' estiver selecionado
+    if (filtroPessoa === "todos") {
+      promessas.push(api.get("/dashboard/tabelao", { params }))
+    }
+
+    Promise.all(promessas).then(([r, e, c, p, ex, t]) => {
       setResumo(r.data)
       const mapa = {}
       e.data.receitas.forEach(x => { mapa[x.mes_ano] = { ...mapa[x.mes_ano], mes_ano: x.mes_ano, Receitas: x.total } })
@@ -73,12 +87,17 @@ export default function Dashboard() {
       setCategorias(c.data)
       setProporcao(p.data)
       setExtrato(ex.data)
+      
+      if (t) {
+        setTabelaoData(t.data)
+      } else {
+        setTabelaoData(null)
+      }
     }).catch(err => {
       console.error("Erro ao buscar dados do dashboard", err)
     }).finally(() => setLoading(false))
   }, [filtroAno, mesInicio, mesFim, filtroPessoa])
 
-  // Corrige o bug numérico da comparação de meses
   const evolucaoFiltrada = evolucao.filter(e => {
     const mes = parseInt(e.mes_ano?.split("/")[0], 10)
     return mes >= parseInt(mesInicio, 10) && mes <= parseInt(mesFim, 10)
@@ -86,7 +105,6 @@ export default function Dashboard() {
 
   const saldoPositivo = resumo.saldo >= 0
 
-  // Estrutura o gráfico de rosca dinamicamente para os 3 tipos
   const pieData = [
     { name: "Avulsas", value: proporcao.avulsas },
     { name: "Parceladas", value: proporcao.parceladas },
@@ -111,6 +129,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
+      {/* Filtros Superiores */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-white">Dashboard</h1>
 
@@ -172,6 +191,7 @@ export default function Dashboard() {
         <div className="text-center text-white py-10">Carregando dados...</div>
       ) : (
         <>
+          {/* KPIs */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <KpiCard label="Saldo Líquido" value={resumo.saldo}
               cor={saldoPositivo ? "#00E676" : "#EF553B"}
@@ -180,6 +200,74 @@ export default function Dashboard() {
             <KpiCard label="Total Despesas" value={resumo.despesas} cor="#EF553B" sub="Saídas registradas" />
           </div>
 
+          {/* UPGRADE: Tabelão de Consolidação Mensal (Aparece apenas se filtroPessoa === "todos") */}
+          {filtroPessoa === "todos" && tabelaoData && tabelaoData.linhas.length > 0 && (
+            <ChartCard title="Tabelão de Consolidação Mensal">
+              <div className="overflow-x-auto -mx-5 px-5">
+                <table className="w-full text-xs md:text-sm whitespace-nowrap border-collapse">
+                  <thead>
+                    <tr className="bg-surface2 text-muted text-[10px] md:text-xs uppercase tracking-wider border-b border-border text-center">
+                      <th className="py-3 px-4 text-left font-semibold">Mês/Ano</th>
+                      <th className="py-3 px-4 font-semibold">Receitas Totais</th>
+                      <th className="py-3 px-4 font-semibold">Despesas Totais</th>
+                      <th className="py-3 px-4 font-semibold">Saldo Geral</th>
+                      {tabelaoData.pessoas.map(p => (
+                        <Fragment key={p}>
+                          <th className="py-3 px-4 font-semibold text-center border-l border-border/40">{`Gastos ${p}`}</th>
+                          <th className="py-3 px-4 font-semibold text-center">{`Saldo ${p}`}</th>
+                        </Fragment>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/40 font-mono text-center">
+                    {tabelaoData.linhas.map(row => (
+                      <tr key={row.mes_ano} className="hover:bg-surface2/40 transition-colors">
+                        <td className="py-2.5 px-4 text-left text-subtle font-medium">{row.mes_ano}</td>
+                        <td className="py-2.5 px-4 text-green">{fmt(row.receitas_totais)}</td>
+                        <td className="py-2.5 px-4 text-red">{fmt(row.despesas_totais)}</td>
+                        <td className={`py-2.5 px-4 font-semibold ${row.saldo_geral >= 0 ? 'text-green' : 'text-red'}`}>
+                          {fmt(row.saldo_geral)}
+                        </td>
+                        {tabelaoData.pessoas.map(p => {
+                          const det = row.detalhes_pessoas[p] || { gastos: 0.0, saldo: 0.0 };
+                          return (
+                            <Fragment key={p}>
+                              <td className="py-2.5 px-4 text-muted border-l border-border/30">{fmt(det.gastos)}</td>
+                              <td className={`py-2.5 px-4 ${det.saldo >= 0 ? 'text-green' : 'text-red'}`}>
+                                {fmt(det.saldo)}
+                              </td>
+                            </Fragment>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                    {/* Linha de Totais Acumulados exatamente igual à planilha */}
+                    <tr className="bg-surface2 font-bold text-center border-t-2 border-border text-white">
+                      <td className="py-3 px-4 text-left font-semibold">TOTAL ACUMULADO</td>
+                      <td className="py-3 px-4 text-green">{fmt(tabelaoData.totais_acumulados.receitas_totais)}</td>
+                      <td className="py-3 px-4 text-red">{fmt(tabelaoData.totais_acumulados.despesas_totais)}</td>
+                      <td className={`py-3 px-4 ${tabelaoData.totais_acumulados.saldo_geral >= 0 ? 'text-green' : 'text-red'}`}>
+                        {fmt(tabelaoData.totais_acumulados.saldo_geral)}
+                      </td>
+                      {tabelaoData.pessoas.map(p => {
+                        const det = tabelaoData.totais_acumulados.detalhes_pessoas[p] || { gastos: 0.0, saldo: 0.0 };
+                        return (
+                          <Fragment key={p}>
+                            <td className="py-3 px-4 text-muted border-l border-border/30">{fmt(det.gastos)}</td>
+                            <td className={`py-3 px-4 ${det.saldo >= 0 ? 'text-green' : 'text-red'}`}>
+                              {fmt(det.saldo)}
+                            </td>
+                          </Fragment>
+                        );
+                      })}
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </ChartCard>
+          )}
+
+          {/* Gráfico de Evolução */}
           {evolucaoFiltrada.length > 0 && (
             <ChartCard title="Evolução Financeira Mensal">
               <div className="w-full h-56 md:h-72">
@@ -203,6 +291,7 @@ export default function Dashboard() {
             </ChartCard>
           )}
 
+          {/* Gráficos Secundários */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {categorias.length > 0 && (
               <ChartCard title="Gastos por Categoria">
@@ -244,11 +333,7 @@ export default function Dashboard() {
                         nameKey="name" 
                         labelLine={false} 
                         style={{ fontSize: 11 }} 
-                        label={({ x, y, name, percent }) => (
-                          <text x={x} y={y} fill="#a3a8b4" textAnchor="middle" dominantBaseline="central" style={{ fontSize: 10 }}>
-                            {`${name} ${(percent * 100).toFixed(0)}%`}
-                          </text>
-)}
+                        label={({ x, y, name, percent }) => <text x={x} y={y} fill="#a3a8b4" textAnchor="middle" dominantBaseline="central" style={{ fontSize: 10 }}>{`${name} ${(percent * 100).toFixed(0)}%`}</text>}
                       >
                         {pieData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={PALETA_CORES[index % PALETA_CORES.length]} />
@@ -267,6 +352,7 @@ export default function Dashboard() {
             )}
           </div>
 
+          {/* Extrato de Despesas */}
           {extrato.length > 0 && (
             <ChartCard title="Extrato de Despesas">
               <div className="overflow-x-auto -mx-5 px-5">
