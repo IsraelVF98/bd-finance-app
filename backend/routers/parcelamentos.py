@@ -17,6 +17,18 @@ class ParcelamentoBody(BaseModel):
     qtd_parcelas: int
     valor_total: float
 
+# Função utilitária para limpar o sufixo " (1/12)" e mostrar a descrição limpa
+def limpar_descricao_parcelamento(desc: str) -> str:
+    if not desc:
+        return "—"
+    desc_str = str(desc).strip()
+    if desc_str.endswith(")"):
+        indice_parentese = desc_str.rfind(" (")
+        if indice_parentese != -1:
+            retorno = desc_str[:indice_parentese].strip()
+            return retorno if retorno else "—"
+    return desc_str
+
 @router.post("/")
 def criar_parcelamento(body: ParcelamentoBody, user=Depends(get_current_user)):
     if body.valor_total <= 0:
@@ -47,15 +59,23 @@ def criar_parcelamento(body: ParcelamentoBody, user=Depends(get_current_user)):
 @router.get("/")
 def listar_parcelamentos(user=Depends(get_current_user)):
     with engine.connect() as conn:
+        # UPGRADE: Adicionada a coluna MIN(descricao) como sexta coluna (r[5])
         rows = conn.execute(text("""
-            SELECT id_parcelamento, categoria, quem_pagou, COUNT(*) as parcelas, SUM(valor) as total
+            SELECT id_parcelamento, categoria, quem_pagou, COUNT(*) as parcelas, SUM(valor) as total, MIN(descricao) as descricao
             FROM despesas WHERE id_parcelamento IS NOT NULL AND usuario_id = :uid
             GROUP BY id_parcelamento, categoria, quem_pagou
             ORDER BY id_parcelamento DESC
         """), {"uid": user["id"]}).fetchall()
 
-    return [{"id_contrato": r[0], "categoria": r[1], "responsavel": r[2],
-             "parcelas_totais": r[3], "valor_total": float(r[4])} for r in rows]
+    # UPGRADE: Retorna a descrição limpa usando a função auxiliar
+    return [{
+        "id_contrato": r[0], 
+        "categoria": r[1], 
+        "responsavel": r[2],
+        "parcelas_totais": r[3], 
+        "valor_total": float(r[4]),
+        "descricao": limpar_descricao_parcelamento(r[5])
+    } for r in rows]
 
 @router.delete("/{id_parcelamento}")
 def deletar_parcelamento(id_parcelamento: str, user=Depends(get_current_user)):
@@ -63,4 +83,4 @@ def deletar_parcelamento(id_parcelamento: str, user=Depends(get_current_user)):
         conn.execute(text(
             "DELETE FROM despesas WHERE id_parcelamento=:id AND usuario_id=:uid"
         ), {"id": id_parcelamento, "uid": user["id"]})
-    return {"message": "Parcelamento removido."}
+    return {"message": "Parcelamento removed."}

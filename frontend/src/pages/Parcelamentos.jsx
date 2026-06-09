@@ -143,7 +143,8 @@ export default function Parcelamentos() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-muted text-xs">
-                  {["ID Contrato","Categoria","Responsável","Parcelas","Valor Total",""].map(h => (
+                  {/* ADICIONADO: "Descrição" no cabeçalho */}
+                  {["ID Contrato","Categoria","Descrição","Responsável","Parcelas","Valor Total",""].map(h => (
                     <th key={h} className="text-left py-2 px-3 font-medium">{h}</th>
                   ))}
                 </tr>
@@ -153,7 +154,11 @@ export default function Parcelamentos() {
                   <tr key={row.id_contrato} className="border-b border-border/50 hover:bg-surface2 transition-colors">
                     <td className="py-2 px-3 font-mono text-xs text-subtle">{row.id_contrato}</td>
                     <td className="py-2 px-3"><span className="bg-green/10 text-green px-2 py-0.5 rounded text-xs">{row.categoria}</span></td>
-                    <td className="py-2 px-3 text-muted">{row.responsavel}</td>
+                    
+                    {/* ADICIONADO: Célula de Descrição com limite de tamanho para não quebrar o layout */}
+                    <td className="py-2 px-3 text-muted max-w-[150px] truncate">{row.descricao || "—"}</td>
+                    
+                    <td className="py-2 px-3 text-subtle">{row.responsavel}</td>
                     <td className="py-2 px-3 text-center">{row.parcelas_totais}x</td>
                     <td className="py-2 px-3 font-mono text-red">{fmt(row.valor_total)}</td>
                     <td className="py-2 px-3">

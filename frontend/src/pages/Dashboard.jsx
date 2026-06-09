@@ -178,9 +178,9 @@ export default function Dashboard() {
             <KpiCard label="Total Despesas" value={resumo.despesas} cor="#EF553B" sub="Saídas registradas" />
           </div>
 
-          {/* Tabelão de Consolidação Mensal */}
+          {/* Consolidação Mensal */}
           {filtroPessoa === "todos" && tabelaoData && tabelaoData.linhas.length > 0 && (
-            <ChartCard title="Tabelão de Consolidação Mensal">
+            <ChartCard title="Consolidação Mensal">
               <div className="overflow-x-auto -mx-5 px-5">
                 <table className="w-full text-[10px] md:text-xs whitespace-nowrap border-collapse">
                   <thead>
