@@ -83,68 +83,66 @@ return (
     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
       <h1 className="text-2xl font-bold text-white">Dashboard</h1>
 
-      {/* Filtros */}
-      <div className="flex flex-wrap items-center gap-3">
+                {/* Filtros */}
+    <div className="flex flex-wrap items-center gap-3">
 
-        {/* Ano */}
-        <select
-          value={filtroAno}
-          onChange={e => setFiltroAno(e.target.value)}
-          className="bg-surface border border-border text-white text-sm px-4 py-2 rounded-xl focus:outline-none focus:border-green min-w-[100px]"
-        >
-          {anos.map(a => (
-            <option key={a} value={a}>
-              {a}
-            </option>
-          ))}
-        </select>
+      {/* Ano */}
+      <select
+        value={filtroAno}
+        onChange={e => setFiltroAno(e.target.value)}
+        className="bg-surface border border-border text-white text-sm px-4 py-2 rounded-xl focus:outline-none focus:border-green min-w-[100px]"
+      >
+        {anos.map(a => (
+          <option key={a} value={a}>
+            {a}
+          </option>
+        ))}
+      </select>
 
-        {/* Mês Inicial */}
-        <select
-          value={mesInicio}
-          onChange={e => setMesInicio(e.target.value)}
-          className="bg-surface border border-border text-white text-sm px-4 py-2 rounded-xl focus:outline-none focus:border-green min-w-[140px]"
-        >
-          {MESES
-            .filter(([cod]) => mesesDisponiveis.includes(cod))
-            .map(([cod, nome]) => (
-              <option key={cod} value={cod}>
-                {nome}
-              </option>
-            ))}
-        </select>
+      {/* Mês Inicial */}
+      <select
+        value={mesInicio}
+        onChange={e => setMesInicio(e.target.value)}
+        className="bg-surface border border-border text-white text-sm px-4 py-2 rounded-xl focus:outline-none focus:border-green min-w-[140px]"
+      >
+        {MESES.map(([cod, nome]) => (
+          <option key={cod} value={cod}>
+            {nome}
+          </option>
+        ))}
+      </select>
 
-        <span className="text-gray-400 text-sm">até</span>
+      <span className="text-gray-400 text-sm font-medium">
+        até
+      </span>
 
-        {/* Mês Final */}
-        <select
-          value={mesFim}
-          onChange={e => setMesFim(e.target.value)}
-          className="bg-surface border border-border text-white text-sm px-4 py-2 rounded-xl focus:outline-none focus:border-green min-w-[140px]"
-        >
-          {MESES
-            .filter(([cod]) => mesesDisponiveis.includes(cod))
-            .map(([cod, nome]) => (
-              <option key={cod} value={cod}>
-                {nome}
-              </option>
-            ))}
-        </select>
+      {/* Mês Final */}
+      <select
+        value={mesFim}
+        onChange={e => setMesFim(e.target.value)}
+        className="bg-surface border border-border text-white text-sm px-4 py-2 rounded-xl focus:outline-none focus:border-green min-w-[140px]"
+      >
+        {MESES.map(([cod, nome]) => (
+          <option key={cod} value={cod}>
+            {nome}
+          </option>
+        ))}
+      </select>
 
-        {/* Pessoa */}
-        <select
-          value={filtroPessoa}
-          onChange={e => setFiltroPessoa(e.target.value)}
-          className="bg-surface border border-border text-white text-sm px-4 py-2 rounded-xl focus:outline-none focus:border-green min-w-[140px]"
-        >
-          <option value="todos">Todas as pessoas</option>
-          {pessoas.map(p => (
-            <option key={p} value={p}>
-              {p}
-            </option>
-          ))}
-        </select>
+      {/* Pessoa */}
+      <select
+        value={filtroPessoa}
+        onChange={e => setFiltroPessoa(e.target.value)}
+        className="bg-surface border border-border text-white text-sm px-4 py-2 rounded-xl focus:outline-none focus:border-green min-w-[160px]"
+      >
+        <option value="todos">Todas as pessoas</option>
 
+        {pessoas.map(p => (
+          <option key={p} value={p}>
+            {p}
+          </option>
+        ))}
+      </select>
       </div>
     </div>
 
