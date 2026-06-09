@@ -244,11 +244,11 @@ export default function Dashboard() {
                         nameKey="name" 
                         labelLine={false} 
                         style={{ fontSize: 11 }} 
-                        label={({ name, percent }) => (
-                          <text fill="#a3a8b4" textAnchor="middle" dominantBaseline="central">
+                        label={({ x, y, name, percent }) => (
+                          <text x={x} y={y} fill="#a3a8b4" textAnchor="middle" dominantBaseline="central" style={{ fontSize: 10 }}>
                             {`${name} ${(percent * 100).toFixed(0)}%`}
                           </text>
-                        )}
+)}
                       >
                         {pieData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={PALETA_CORES[index % PALETA_CORES.length]} />
