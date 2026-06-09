@@ -112,8 +112,8 @@ export default function Layout() {
           <div className="flex items-center gap-2">
             <img src={logo} alt="B&D Finance Logo" className="w-6 h-6 object-contain" />
             <div className="text-base font-bold tracking-tight">
-              <span className="text-green">B&D</span>
-              <span className="text-white"> Finance</span>
+              <span className="text-[#6f5439]">B&D</span>
+              <span className="text-[#747570]"> Finance</span>
             </div>
           </div>
           

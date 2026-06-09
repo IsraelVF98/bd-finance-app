@@ -52,8 +52,6 @@ export default function Login() {
           <div className="flex items-center justify-center gap-4">
             <img src={logo} alt="B&D Finance Logo" className="w-20 h-20 object-contain" />
             <div className="text-4xl font-bold tracking-tight">
-              <span className="text-green">B&D</span>
-              <span className="text-white"> Finance</span>
             </div>
           </div>
         </div>
