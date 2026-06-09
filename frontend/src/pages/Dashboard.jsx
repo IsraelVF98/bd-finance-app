@@ -76,34 +76,76 @@ export default function Dashboard() {
     { name: "Parceladas", value: proporcao.parceladas },
   ].filter(d => d.value > 0)
 
-  return (
-    <div className="space-y-6">
-      {/* Topo Responsivo */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+return (
+  <div className="space-y-6">
+    {/* Topo Responsivo */}
+    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <h1 className="text-2xl font-bold text-white">Dashboard</h1>
 
-        {/* Filtros */}
-        <div className="flex flex-wrap items-center gap-2 md:gap-3">
-          <select value={filtroAno} onChange={e => setFiltroAno(e.target.value)}
-            className="bg-surface border border-border text-white text-sm px-3 py-1.5 rounded-lg focus:outline-none focus:border-green flex-1 md:flex-none">
-            {anos.map(a => <option key={a}>{a}</option>)}
-          </select>
+      {/* Filtros */}
+      <div className="flex flex-wrap items-center gap-3">
 
-          <select multiple value={filtroMes} onChange={(e) => {const selectedValues = Array.from(e.target.selectedOptions, option => option.value);setFiltroMes(selectedValues);}}
-            className="bg-surface border border-border text-white text-sm px-3 py-1.5 rounded-lg focus:outline-none focus:border-green flex-1 md:flex-none h-[34px]">
-            {}
-            {MESES.filter(([cod]) => mesesDisponiveis.includes(cod)).map(([cod, nome]) => (
-            <option key={cod} value={cod}>{nome}</option>
+        {/* Ano */}
+        <select
+          value={filtroAno}
+          onChange={e => setFiltroAno(e.target.value)}
+          className="bg-surface border border-border text-white text-sm px-4 py-2 rounded-xl focus:outline-none focus:border-green min-w-[100px]"
+        >
+          {anos.map(a => (
+            <option key={a} value={a}>
+              {a}
+            </option>
+          ))}
+        </select>
+
+        {/* Mês Inicial */}
+        <select
+          value={mesInicio}
+          onChange={e => setMesInicio(e.target.value)}
+          className="bg-surface border border-border text-white text-sm px-4 py-2 rounded-xl focus:outline-none focus:border-green min-w-[140px]"
+        >
+          {MESES
+            .filter(([cod]) => mesesDisponiveis.includes(cod))
+            .map(([cod, nome]) => (
+              <option key={cod} value={cod}>
+                {nome}
+              </option>
             ))}
-          </select>
-          
-          <select value={filtroPessoa} onChange={e => setFiltroPessoa(e.target.value)}
-            className="bg-surface border border-border text-white text-sm px-3 py-1.5 rounded-lg focus:outline-none focus:border-green flex-1 md:flex-none">
-            <option value="todos">Todos</option>
-            {pessoas.map(p => <option key={p}>{p}</option>)}
-          </select>
-        </div>
+        </select>
+
+        <span className="text-gray-400 text-sm">até</span>
+
+        {/* Mês Final */}
+        <select
+          value={mesFim}
+          onChange={e => setMesFim(e.target.value)}
+          className="bg-surface border border-border text-white text-sm px-4 py-2 rounded-xl focus:outline-none focus:border-green min-w-[140px]"
+        >
+          {MESES
+            .filter(([cod]) => mesesDisponiveis.includes(cod))
+            .map(([cod, nome]) => (
+              <option key={cod} value={cod}>
+                {nome}
+              </option>
+            ))}
+        </select>
+
+        {/* Pessoa */}
+        <select
+          value={filtroPessoa}
+          onChange={e => setFiltroPessoa(e.target.value)}
+          className="bg-surface border border-border text-white text-sm px-4 py-2 rounded-xl focus:outline-none focus:border-green min-w-[140px]"
+        >
+          <option value="todos">Todas as pessoas</option>
+          {pessoas.map(p => (
+            <option key={p} value={p}>
+              {p}
+            </option>
+          ))}
+        </select>
+
       </div>
+    </div>
 
       {/* KPIs Responsivos */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
