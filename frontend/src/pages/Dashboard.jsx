@@ -14,7 +14,7 @@ const MESES = [
   ["09","Set"],["10","Out"],["11","Nov"],["12","Dez"],
 ]
 
-// Paleta de cores moderna e viva (Corrigido o bug do hexadecimal extra)
+// Paleta de cores moderna e viva
 const PALETA_CORES = [
   "#36A2EB", "#FF6384", "#FF9F40", "#4BC0C0", "#9966FF", 
   "#FFCD56", "#C9CBCC", "#FF5733", "#33FF57", "#3357FF"
@@ -48,7 +48,8 @@ export default function Dashboard() {
   useEffect(() => {
     if (!filtroAno) return
     setLoading(true)
-    const params = { filtro_ano: filtroAno, filtro_mes: filtroMes.length > 0 ? filtroMes.join(",") : "todos", filtro_pessoa: filtroPessoa }
+    const params = { filtro_ano: filtroAno, mes_inicio: mesInicio, mes_fim: mesFim, filtro_pessoa: filtroPessoa }
+    
     Promise.all([
       api.get("/dashboard/resumo", { params }),
       api.get("/dashboard/evolucao-mensal", { params: { filtro_ano: filtroAno } }),
@@ -65,216 +66,238 @@ export default function Dashboard() {
       setProporcao(p.data)
       setExtrato(ex.data)
     }).finally(() => setLoading(false))
-  }, [filtroAno, filtroMes, filtroPessoa])
+  }, [filtroAno, mesInicio, mesFim, filtroPessoa]) // Corrigido: Dependências corretas sem o 'filtroMes' inexistente
+
+  // Filtra a evolução mensal exibida no gráfico de acordo com o intervalo de meses selecionado
+  const evolucaoFiltrada = evolucao.filter(e => {
+    const mes = e.mes_ano?.split("/")[0]
+    return mes >= mesInicio && mes <= mesFim
+  })
 
   const saldoPositivo = resumo.saldo >= 0
-  const mesesDisponiveis = [...new Set([
-    ...evolucao.map(e => e.mes_ano?.split("/")[0])
-  ])].filter(Boolean)
 
   const pieData = [
     { name: "Avulsas", value: proporcao.avulsas },
     { name: "Parceladas", value: proporcao.parceladas },
   ].filter(d => d.value > 0)
 
-return (
-  <div className="space-y-6">
-    {/* Topo Responsivo */}
-    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-      <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+  // Handlers para evitar que a data inicial seja maior que a data final
+  const handleMesInicioChange = (e) => {
+    const novoInicio = e.target.value
+    setMesInicio(novoInicio)
+    if (novoInicio > mesFim) {
+      setMesFim(novoInicio)
+    }
+  }
 
-                {/* Filtros */}
-    <div className="flex flex-wrap items-center gap-3">
+  const handleMesFimChange = (e) => {
+    const novoFim = e.target.value
+    setMesFim(novoFim)
+    if (novoFim < mesInicio) {
+      setMesInicio(novoFim)
+    }
+  }
 
-      {/* Ano */}
-      <select
-        value={filtroAno}
-        onChange={e => setFiltroAno(e.target.value)}
-        className="bg-surface border border-border text-white text-sm px-4 py-2 rounded-xl focus:outline-none focus:border-green min-w-[100px]"
-      >
-        {anos.map(a => (
-          <option key={a} value={a}>
-            {a}
-          </option>
-        ))}
-      </select>
+  return (
+    <div className="space-y-6">
+      {/* Topo Responsivo */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <h1 className="text-2xl font-bold text-white">Dashboard</h1>
 
-      {/* Mês Inicial */}
-      <select
-        value={mesInicio}
-        onChange={e => setMesInicio(e.target.value)}
-        className="bg-surface border border-border text-white text-sm px-4 py-2 rounded-xl focus:outline-none focus:border-green min-w-[140px]"
-      >
-        {MESES.map(([cod, nome]) => (
-          <option key={cod} value={cod}>
-            {nome}
-          </option>
-        ))}
-      </select>
+        {/* Filtros */}
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Ano */}
+          <select
+            value={filtroAno}
+            onChange={e => setFiltroAno(e.target.value)}
+            className="bg-surface border border-border text-white text-sm px-4 py-2 rounded-xl focus:outline-none focus:border-green min-w-[100px]"
+          >
+            {anos.map(a => (
+              <option key={a} value={a}>
+                {a}
+              </option>
+            ))}
+          </select>
 
-      <span className="text-gray-400 text-sm font-medium">
-        até
-      </span>
+          {/* Mês Inicial */}
+          <select
+            value={mesInicio}
+            onChange={handleMesInicioChange}
+            className="bg-surface border border-border text-white text-sm px-4 py-2 rounded-xl focus:outline-none focus:border-green min-w-[140px]"
+          >
+            {MESES.map(([cod, nome]) => (
+              <option key={cod} value={cod}>
+                {nome}
+              </option>
+            ))}
+          </select>
 
-      {/* Mês Final */}
-      <select
-        value={mesFim}
-        onChange={e => setMesFim(e.target.value)}
-        className="bg-surface border border-border text-white text-sm px-4 py-2 rounded-xl focus:outline-none focus:border-green min-w-[140px]"
-      >
-        {MESES.map(([cod, nome]) => (
-          <option key={cod} value={cod}>
-            {nome}
-          </option>
-        ))}
-      </select>
+          <span className="text-gray-400 text-sm font-medium">até</span>
 
-      {/* Pessoa */}
-      <select
-        value={filtroPessoa}
-        onChange={e => setFiltroPessoa(e.target.value)}
-        className="bg-surface border border-border text-white text-sm px-4 py-2 rounded-xl focus:outline-none focus:border-green min-w-[160px]"
-      >
-        <option value="todos">Todas as pessoas</option>
+          {/* Mês Final */}
+          <select
+            value={mesFim}
+            onChange={handleMesFimChange}
+            className="bg-surface border border-border text-white text-sm px-4 py-2 rounded-xl focus:outline-none focus:border-green min-w-[140px]"
+          >
+            {MESES.map(([cod, nome]) => (
+              <option key={cod} value={cod}>
+                {nome}
+              </option>
+            ))}
+          </select>
 
-        {pessoas.map(p => (
-          <option key={p} value={p}>
-            {p}
-          </option>
-        ))}
-      </select>
+          {/* Pessoa */}
+          <select
+            value={filtroPessoa}
+            onChange={e => setFiltroPessoa(e.target.value)}
+            className="bg-surface border border-border text-white text-sm px-4 py-2 rounded-xl focus:outline-none focus:border-green min-w-[160px]"
+          >
+            <option value="todos">Todas as pessoas</option>
+            {pessoas.map(p => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
-    </div>
 
-      {/* KPIs Responsivos */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <KpiCard label="Saldo Líquido" value={resumo.saldo}
-          cor={saldoPositivo ? "#00E676" : "#EF553B"}
-          badge={saldoPositivo ? "↑ Positivo" : "↓ Negativo"} />
-        <KpiCard label="Total Receitas" value={resumo.receitas} cor="#00E676" sub="Entradas registradas" />
-        <KpiCard label="Total Despesas" value={resumo.despesas} cor="#EF553B" sub="Saídas registradas" />
-      </div>
-
-      {/* TÓPICO 1 - Gráfico evolução mensal (Texto branco no popup adicionado) */}
-      {filtroMes === "todos" && evolucao.length > 0 && (
-        <ChartCard title="Evolução Financeira Mensal">
-          <div className="w-full h-56 md:h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={evolucao} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#2a2d3e" />
-                <XAxis dataKey="mes_ano" tick={{ fill: "#a3a8b4", fontSize: 11 }} />
-                <YAxis tick={{ fill: "#a3a8b4", fontSize: 11 }} tickFormatter={v => `R$${(v/1000).toFixed(0)}k`} />
-                <Tooltip 
-                  formatter={(v) => fmt(v)} 
-                  contentStyle={{ background: "#161922", border: "1px solid #2a2d3e", borderRadius: 8 }}
-                  itemStyle={{ color: "#ffffff" }}
-                  labelStyle={{ color: "#ffffff" }}
-                />
-                <Legend iconSize={10} wrapperStyle={{ fontSize: 12 }} />
-                <Line type="monotone" dataKey="Receitas" stroke="#00E676" strokeWidth={2} dot={{ r: 3, fill: "#00E676" }} activeDot={{ r: 5 }} />
-                <Line type="monotone" dataKey="Despesas" stroke="#EF553B" strokeWidth={2} dot={{ r: 3, fill: "#EF553B" }} activeDot={{ r: 5 }} />
-              </LineChart>
-            </ResponsiveContainer>
+      {loading ? (
+        <div className="text-center text-white py-10">Carregando dados...</div>
+      ) : (
+        <>
+          {/* KPIs Responsivos */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <KpiCard label="Saldo Líquido" value={resumo.saldo}
+              cor={saldoPositivo ? "#00E676" : "#EF553B"}
+              badge={saldoPositivo ? "↑ Positivo" : "↓ Negativo"} />
+            <KpiCard label="Total Receitas" value={resumo.receitas} cor="#00E676" sub="Entradas registradas" />
+            <KpiCard label="Total Despesas" value={resumo.despesas} cor="#EF553B" sub="Saídas registradas" />
           </div>
-        </ChartCard>
-      )}
 
-      {/* Gráficos Secundários */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        
-        {/* TÓPICO 2 - Gastos por categoria (Texto branco no popup adicionado) */}
-        {categorias.length > 0 && (
-          <ChartCard title="Gastos por Categoria">
-            <div className="w-full h-56 md:h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={categorias} layout="horizontal" margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#2a2d3e" vertical={false} />
-                  <XAxis type="category" dataKey="categoria" tick={{ fill: "#a3a8b4", fontSize: 10 }} />
-                  <YAxis type="number" tick={{ fill: "#a3a8b4", fontSize: 10 }} tickFormatter={v => `R$${(v/1000).toFixed(0)}k`} />
-                  <Tooltip 
-                    formatter={(v) => fmt(v)} 
-                    contentStyle={{ background: "#161922", border: "1px solid #2a2d3e", borderRadius: 8 }}
-                    itemStyle={{ color: "#ffffff" }}
-                    labelStyle={{ color: "#ffffff" }}
-                  />
-                  <Bar dataKey="total" radius={[4, 4, 0, 0]}>
-                    {categorias.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={PALETA_CORES[index % PALETA_CORES.length]} />
+          {/* Gráfico evolução mensal filtrado */}
+          {evolucaoFiltrada.length > 0 && (
+            <ChartCard title="Evolução Financeira Mensal">
+              <div className="w-full h-56 md:h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={evolucaoFiltrada} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#2a2d3e" />
+                    <XAxis dataKey="mes_ano" tick={{ fill: "#a3a8b4", fontSize: 11 }} />
+                    <YAxis tick={{ fill: "#a3a8b4", fontSize: 11 }} tickFormatter={v => `R$${(v/1000).toFixed(0)}k`} />
+                    <Tooltip 
+                      formatter={(v) => fmt(v)} 
+                      contentStyle={{ background: "#161922", border: "1px solid #2a2d3e", borderRadius: 8 }}
+                      itemStyle={{ color: "#ffffff" }}
+                      labelStyle={{ color: "#ffffff" }}
+                    />
+                    <Legend iconSize={10} wrapperStyle={{ fontSize: 12 }} />
+                    <Line type="monotone" dataKey="Receitas" stroke="#00E676" strokeWidth={2} dot={{ r: 3, fill: "#00E676" }} activeDot={{ r: 5 }} />
+                    <Line type="monotone" dataKey="Despesas" stroke="#EF553B" strokeWidth={2} dot={{ r: 3, fill: "#EF553B" }} activeDot={{ r: 5 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </ChartCard>
+          )}
+
+          {/* Gráficos Secundários */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            
+            {/* Gastos por categoria */}
+            {categorias.length > 0 && (
+              <ChartCard title="Gastos por Categoria">
+                <div className="w-full h-56 md:h-72">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={categorias} layout="horizontal" margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#2a2d3e" vertical={false} />
+                      <XAxis type="category" dataKey="categoria" tick={{ fill: "#a3a8b4", fontSize: 10 }} />
+                      <YAxis type="number" tick={{ fill: "#a3a8b4", fontSize: 10 }} tickFormatter={v => `R$${(v/1000).toFixed(0)}k`} />
+                      <Tooltip 
+                        formatter={(v) => fmt(v)} 
+                        contentStyle={{ background: "#161922", border: "1px solid #2a2d3e", borderRadius: 8 }}
+                        itemStyle={{ color: "#ffffff" }}
+                        labelStyle={{ color: "#ffffff" }}
+                      />
+                      <Bar dataKey="total" radius={[4, 4, 0, 0]}>
+                        {categorias.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={PALETA_CORES[index % PALETA_CORES.length]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </ChartCard>
+            )}
+
+            {/* Avulsas vs Parceladas */}
+            {pieData.length > 0 && (
+              <ChartCard title="Avulsas vs. Parceladas">
+                <div className="w-full h-56 md:h-72">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart key={`pie-chart-${pieData.length}`}>
+                      <Pie 
+                        data={pieData} 
+                        cx="50%" 
+                        cy="50%" 
+                        innerRadius={55} 
+                        outerRadius={85}
+                        dataKey="value" 
+                        nameKey="name" 
+                        labelLine={false} 
+                        style={{ fontSize: 11 }} 
+                        label={({ name, percent }) => (
+                          <text fill="#a3a8b4" textAnchor="middle" dominantBaseline="central">
+                            {`${name} ${(percent * 100).toFixed(0)}%`}
+                          </text>
+                        )}
+                      >
+                        <Cell fill="#FF9F40" />
+                        <Cell fill="#36A2EB" />
+                      </Pie>
+                      <Tooltip 
+                        formatter={(v) => fmt(v)} 
+                        contentStyle={{ background: "#161922", border: "1px solid #2a2d3e", borderRadius: 8 }}
+                        itemStyle={{ color: "#ffffff" }}
+                        labelStyle={{ color: "#ffffff" }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </ChartCard>
+            )}
+          </div>
+
+          {/* Extrato de Despesas */}
+          {extrato.length > 0 && (
+            <ChartCard title="Extrato de Despesas">
+              <div className="overflow-x-auto -mx-5 px-5">
+                <table className="w-full text-xs md:text-sm whitespace-nowrap">
+                  <thead>
+                    <tr className="border-b border-border text-muted text-[10px] md:text-xs uppercase tracking-wider">
+                      {(mesInicio !== mesFim ? ["Mês/Ano", "Categoria", "Descrição", "Valor", "Quem Pagou"] : ["Categoria", "Descrição", "Valor", "Quem Pagou"])
+                        .map(h => <th key={h} className="text-left py-2 px-2.5 font-medium">{h}</th>)}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/40">
+                    {extrato.map(row => (
+                      <tr key={row.id} className="hover:bg-surface2 transition-colors">
+                        {mesInicio !== mesFim && <td className="py-2 px-2.5 text-subtle font-mono text-[11px] md:text-xs">{row.mes_ano}</td>}
+                        <td className="py-2 px-2.5">
+                          <span className="bg-green/10 text-green px-1.5 py-0.5 rounded text-[10px] md:text-xs font-medium">
+                            {row.categoria}
+                          </span>
+                        </td>
+                        <td className="py-2 px-2.5 text-muted max-w-[140px] truncate md:max-w-none">{row.descricao || "—"}</td>
+                        <td className="py-2 px-2.5 font-mono text-red font-medium">{fmt(row.valor)}</td>
+                        <td className="py-2 px-2.5 text-subtle text-[11px] md:text-xs">{row.quem_pagou}</td>
+                      </tr>
                     ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </ChartCard>
-        )}
-
-        {/* Avulsas vs Parceladas (Texto branco no popup adicionado) */}
-        {pieData.length > 0 && (
-          <ChartCard title="Avulsas vs. Parceladas">
-            <div className="w-full h-56 md:h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart key={`pie-chart-${pieData.length}`}>
-                  <Pie 
-                    data={pieData} 
-                    cx="50%" 
-                    cy="50%" 
-                    innerRadius={55} 
-                    outerRadius={85}
-                    dataKey="value" 
-                    nameKey="name" 
-                    labelLine={false} 
-                    style={{ fontSize: 11 }} 
-                    label={({ name, percent }) => (
-                      <text fill="#a3a8b4" textAnchor="middle" dominantBaseline="central">
-                        {`${name} ${(percent * 100).toFixed(0)}%`}
-                      </text>
-                    )}
-                  >
-                    <Cell fill="#FF9F40" />
-                    <Cell fill="#36A2EB" />
-                  </Pie>
-                  <Tooltip 
-                    formatter={(v) => fmt(v)} 
-                    contentStyle={{ background: "#161922", border: "1px solid #2a2d3e", borderRadius: 8 }}
-                    itemStyle={{ color: "#ffffff" }}
-                    labelStyle={{ color: "#ffffff" }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </ChartCard>
-        )}
-      </div>
-
-      {/* Extrato de Despesas */}
-      {extrato.length > 0 && (
-        <ChartCard title="Extrato de Despesas">
-          <div className="overflow-x-auto -mx-5 px-5">
-            <table className="w-full text-xs md:text-sm whitespace-nowrap">
-              <thead>
-                <tr className="border-b border-border text-muted text-[10px] md:text-xs uppercase tracking-wider">
-                  {(filtroMes === "todos" ? ["Mês/Ano", "Categoria", "Descrição", "Valor", "Quem Pagou"] : ["Categoria", "Descrição", "Valor", "Quem Pagou"])
-                    .map(h => <th key={h} className="text-left py-2 px-2.5 font-medium">{h}</th>)}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/40">
-                {extrato.map(row => (
-                  <tr key={row.id} className="hover:bg-surface2 transition-colors">
-                    {filtroMes === "todos" && <td className="py-2 px-2.5 text-subtle font-mono text-[11px] md:text-xs">{row.mes_ano}</td>}
-                    <td className="py-2 px-2.5">
-                      <span className="bg-green/10 text-green px-1.5 py-0.5 rounded text-[10px] md:text-xs font-medium">
-                        {row.categoria}
-                      </span>
-                    </td>
-                    <td className="py-2 px-2.5 text-muted max-w-[140px] truncate md:max-w-none">{row.descricao || "—"}</td>
-                    <td className="py-2 px-2.5 font-mono text-red font-medium">{fmt(row.valor)}</td>
-                    <td className="py-2 px-2.5 text-subtle text-[11px] md:text-xs">{row.quem_pagou}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </ChartCard>
+                  </tbody>
+                </table>
+              </div>
+            </ChartCard>
+          )}
+        </>
       )}
     </div>
   )
