@@ -44,9 +44,9 @@ export default function Categorias() {
           <input value={nome} onChange={e => setNome(e.target.value)}
             onKeyDown={e => e.key === "Enter" && adicionar()}
             placeholder="Ex: Alimentação, Transporte..."
-            className="flex-1 bg-bg border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green" />
+            className="flex-1 bg-bg border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-brand-brown" />
           <button onClick={adicionar}
-            className="bg-green text-bg px-4 py-2 rounded-lg text-sm font-bold hover:bg-green/90 active:scale-95 transition-all flex items-center gap-1.5">
+            className="bg-brand-brown text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-brand-brownHover active:scale-95 transition-all flex items-center gap-1.5">
             <Plus size={14} /> Adicionar
           </button>
         </div>

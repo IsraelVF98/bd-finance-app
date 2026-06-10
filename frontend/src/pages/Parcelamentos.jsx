@@ -1,7 +1,7 @@
 // src/pages/Parcelamentos.jsx
 import { useState, useEffect } from "react"
 import api from "../api/client"
-import { Trash2 } from "lucide-react"
+import { Trash2, Download } from "lucide-react"
 
 const MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"]
 const MESES_MAP = Object.fromEntries(MESES.map((m, i) => [m, String(i + 1).padStart(2, "0")]))
@@ -11,13 +11,13 @@ const ANOS = [anoAtual - 2, anoAtual - 1, anoAtual, anoAtual + 1, anoAtual + 2]
 const Select = ({ label, children, ...props }) => (
   <div>
     <label className="text-muted text-xs font-medium block mb-1">{label}</label>
-    <select {...props} className="w-full bg-bg border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">{children}</select>
+    <select {...props} className="w-full bg-bg border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-brand-brown">{children}</select>
   </div>
 )
 const Input = ({ label, ...props }) => (
   <div>
     <label className="text-muted text-xs font-medium block mb-1">{label}</label>
-    <input {...props} className="w-full bg-bg border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green" />
+    <input {...props} className="w-full bg-bg border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-brand-brown" />
   </div>
 )
 
@@ -28,12 +28,14 @@ export default function Parcelamentos() {
   const [loading, setLoading] = useState(false)
   const [msg, setMsg] = useState({ tipo: "", texto: "" })
 
-  // Começa com strings vazias para obrigar a seleção manual
   const [form, setForm] = useState({
     descricao: "", categoria: "", quem_pagou: "",
     mes: MESES[new Date().getMonth()], ano: anoAtual,
     qtd_parcelas: 12, valor_total: ""
   })
+
+  const [filtroCategoria, setFiltroCategoria] = useState("")
+  const [filtroResponsavel, setFiltroResponsavel] = useState("")
 
   const flash = (tipo, texto) => { setMsg({ tipo, texto }); setTimeout(() => setMsg({ tipo: "", texto: "" }), 3000) }
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
@@ -47,7 +49,6 @@ export default function Parcelamentos() {
   const carregarLista = () => api.get("/parcelamentos/").then(r => setLista(r.data))
 
   const salvar = async () => {
-    // VALIDAÇÃO PADRONIZADA: Barra se não escolher categoria ou pagante
     if (!form.categoria) { flash("erro", "Por favor, selecione uma categoria."); return }
     if (!form.quem_pagou) { flash("erro", "Por favor, selecione o pagante."); return }
     
@@ -64,8 +65,6 @@ export default function Parcelamentos() {
         valor_total: valor
       })
       flash("ok", "Parcelamento criado com sucesso!")
-      
-      // Reseta limpando os campos e resetando os placeholders
       setForm(f => ({ ...f, descricao: "", valor_total: "", categoria: "", quem_pagou: "" }))
       carregarLista()
     } catch (e) { flash("erro", e.response?.data?.detail || "Erro.") }
@@ -79,6 +78,39 @@ export default function Parcelamentos() {
   }
 
   const fmt = v => `R$ ${Number(v).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
+
+  const opcoesCategoria = [...new Set(lista.map(r => r.categoria))].sort()
+  const opcoesResponsavel = [...new Set(lista.map(r => r.responsavel))].sort()
+
+  const listaFiltrada = lista.filter(row => {
+    const matchCat = filtroCategoria ? row.categoria === filtroCategoria : true
+    const matchResp = filtroResponsavel ? row.responsavel === filtroResponsavel : true
+    return matchCat && matchResp
+  })
+
+  const exportarParaExcel = () => {
+    const headers = ["ID Contrato", "Categoria", "Descrição", "Responsável", "Parcelas", "Valor Total"]
+    
+    const rows = listaFiltrada.map(row => [
+      row.id_contrato,
+      row.categoria,
+      row.descricao || "—",
+      row.responsavel,
+      `${row.parcelas_totais}x`,
+      row.valor_total.toString().replace(".", ",")
+    ])
+
+    const csvContent = "\ufeff" + [headers.join(";"), ...rows.map(e => e.join(";"))].join("\n")
+    
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.setAttribute("href", url)
+    link.setAttribute("download", `parcelamentos_${new Date().toLocaleDateString("pt-BR")}.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
 
   return (
     <div className="space-y-6">
@@ -115,7 +147,7 @@ export default function Parcelamentos() {
           <div>
             <label className="text-muted text-xs font-medium block mb-1">Nº de Parcelas</label>
             <input type="number" min={2} max={48} value={form.qtd_parcelas} onChange={e => set("qtd_parcelas", e.target.value)}
-              className="w-full bg-bg border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green" />
+              className="w-full bg-bg border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-brand-brown" />
           </div>
           {form.valor_total && !isNaN(parseFloat(String(form.valor_total).replace(",","."))) && (
             <div className="flex items-end">
@@ -126,7 +158,7 @@ export default function Parcelamentos() {
           )}
           <div className="col-span-2">
             <button onClick={salvar} disabled={loading}
-              className="w-full bg-green text-bg font-bold py-2.5 rounded-lg text-sm hover:bg-green/90 active:scale-95 transition-all disabled:opacity-50">
+              className="w-full bg-brand-brown text-white font-bold py-2.5 rounded-lg text-sm hover:bg-brand-brownHover active:scale-95 transition-all disabled:opacity-50">
               {loading ? "Criando..." : "Criar Parcelamento"}
             </button>
           </div>
@@ -135,7 +167,18 @@ export default function Parcelamentos() {
 
       {/* Lista de contratos */}
       <div className="bg-surface border border-border rounded-xl p-5">
-        <h3 className="text-sm font-semibold text-muted mb-4">Contratos Ativos</h3>
+        
+        <div className="flex items-center justify-between mb-4 gap-3">
+          <h3 className="text-sm font-semibold text-muted">Contratos Ativos</h3>
+          <button 
+            onClick={exportarParaExcel}
+            className="flex items-center gap-2 bg-brand-brown hover:bg-brand-brownHover text-white px-4 py-1.5 rounded-lg text-xs font-bold transition-all h-[34px]"
+          >
+            <Download size={14} />
+            Exportar Excel
+          </button>
+        </div>
+
         {lista.length === 0 ? (
           <p className="text-subtle text-sm text-center py-6">Nenhum parcelamento cadastrado.</p>
         ) : (
@@ -143,21 +186,78 @@ export default function Parcelamentos() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-muted text-xs">
-                  {/* ADICIONADO: "Descrição" no cabeçalho */}
-                  {["ID Contrato","Categoria","Descrição","Responsável","Parcelas","Valor Total",""].map(h => (
-                    <th key={h} className="text-left py-2 px-3 font-medium">{h}</th>
-                  ))}
+                  
+                  <th className="text-left py-2 px-3 font-medium min-w-[100px]">
+                    <div className="flex flex-col gap-1.5">
+                      <span>ID Contrato</span>
+                      <div className="h-[21px]" />
+                    </div>
+                  </th>
+                  
+                  <th className="text-left py-2 px-3 font-medium min-w-[130px]">
+                    <div className="flex flex-col gap-1.5">
+                      <span>Categoria</span>
+                      <select 
+                        value={filtroCategoria} 
+                        onChange={e => setFiltroCategoria(e.target.value)}
+                        className="bg-bg border border-border text-subtle text-[10px] py-0.5 px-1.5 rounded focus:outline-none focus:border-brand-brown font-normal cursor-pointer w-full"
+                      >
+                        <option value="">Tudo</option>
+                        {opcoesCategoria.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                      </select>
+                    </div>
+                  </th>
+                  
+                  <th className="text-left py-2 px-3 font-medium">
+                    <div className="flex flex-col gap-1.5">
+                      <span>Descrição</span>
+                      <div className="h-[21px]" />
+                    </div>
+                  </th>
+                  
+                  <th className="text-left py-2 px-3 font-medium min-w-[120px]">
+                    <div className="flex flex-col gap-1.5">
+                      <span>Responsável</span>
+                      <select 
+                        value={filtroResponsavel} 
+                        onChange={e => setFiltroResponsavel(e.target.value)}
+                        className="bg-bg border border-border text-subtle text-[10px] py-0.5 px-1.5 rounded focus:outline-none focus:border-brand-brown font-normal cursor-pointer w-full"
+                      >
+                        <option value="">Tudo</option>
+                        {opcoesResponsavel.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                      </select>
+                    </div>
+                  </th>
+                  
+                  <th className="text-left py-2 px-3 font-medium min-w-[80px]">
+                    <div className="flex flex-col gap-1.5">
+                      <span>Parcelas</span>
+                      <div className="h-[21px]" />
+                    </div>
+                  </th>
+                  
+                  <th className="text-left py-2 px-3 font-medium min-w-[100px]">
+                    <div className="flex flex-col gap-1.5">
+                      <span>Valor Total</span>
+                      <div className="h-[21px]" />
+                    </div>
+                  </th>
+
+                  <th className="py-2 px-3">
+                    <div className="h-[36px]" />
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {lista.map(row => (
+                {listaFiltrada.map(row => (
                   <tr key={row.id_contrato} className="border-b border-border/50 hover:bg-surface2 transition-colors">
                     <td className="py-2 px-3 font-mono text-xs text-subtle">{row.id_contrato}</td>
-                    <td className="py-2 px-3"><span className="bg-green/10 text-green px-2 py-0.5 rounded text-xs">{row.categoria}</span></td>
-                    
-                    {/* ADICIONADO: Célula de Descrição com limite de tamanho para não quebrar o layout */}
+                    <td className="py-2 px-3">
+                      <span className="bg-brand-brown/10 text-brand-brown px-2 py-0.5 rounded text-xs font-medium">
+                        {row.categoria}
+                      </span>
+                    </td>
                     <td className="py-2 px-3 text-muted max-w-[150px] truncate">{row.descricao || "—"}</td>
-                    
                     <td className="py-2 px-3 text-subtle">{row.responsavel}</td>
                     <td className="py-2 px-3 text-center">{row.parcelas_totais}x</td>
                     <td className="py-2 px-3 font-mono text-red">{fmt(row.valor_total)}</td>

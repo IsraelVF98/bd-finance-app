@@ -1,7 +1,7 @@
 // src/pages/Investimentos.jsx
 import { useState, useEffect } from "react"
 import api from "../api/client"
-import { Trash2, PiggyBank, Wallet, TrendingUp, Plus, Minus,LineChart } from "lucide-react"
+import { Trash2, PiggyBank, Wallet, TrendingUp, Plus, Minus } from "lucide-react"
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from "recharts"
@@ -34,14 +34,14 @@ const mesAtualCompleto = `${mesAtual}/${anoAtual}`
 const Input = ({ label, ...props }) => (
   <div>
     <label className="text-muted text-xs font-medium block mb-1">{label}</label>
-    <input {...props} className="w-full bg-bg border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green" />
+    <input {...props} className="w-full bg-bg border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-brand-brown" />
   </div>
 )
 
 const Select = ({ label, children, ...props }) => (
   <div>
     <label className="text-muted text-xs font-medium block mb-1">{label}</label>
-    <select {...props} className="w-full bg-bg border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">{children}</select>
+    <select {...props} className="w-full bg-bg border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-brand-brown">{children}</select>
   </div>
 )
 
@@ -158,6 +158,7 @@ export default function Investimentos() {
 
       {/* Cards de Resumo */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* UPGRADE: Card borda em marrom da marca */}
         <div className="bg-surface rounded-xl p-5 border-l-4 border-green flex items-center justify-between">
           <div>
             <p className="text-muted text-xs font-medium mb-1">Saldo Atual Investido</p>
@@ -177,7 +178,7 @@ export default function Investimentos() {
             <p className="text-muted text-xs font-medium mb-1">Rendimento Acumulado</p>
             <p className="text-2xl font-bold font-mono text-yellow-500">{fmt(resumo.total_rendido)}</p>
           </div>
-          <LineChart size={24} className="text-yellow-500 opacity-40" />
+          <TrendingUp size={24} className="text-yellow-500 opacity-40" />
         </div>
       </div>
 
@@ -198,7 +199,8 @@ export default function Investimentos() {
                 <option>Cripto</option>
                 <option>Outros</option>
               </Select>
-              <button onClick={salvarAtivo} disabled={loading} className="w-full bg-green text-bg font-bold py-2 rounded-lg text-sm hover:bg-green/90 transition-all">
+              {/* UPGRADE: Botão em marrom da marca */}
+              <button onClick={salvarAtivo} disabled={loading} className="w-full bg-brand-brown text-white font-bold py-2 rounded-lg text-sm hover:bg-brand-brownHover transition-all">
                 Criar Ativo
               </button>
             </div>
@@ -221,7 +223,6 @@ export default function Investimentos() {
                 ))}
               </Select>
               
-              {/* UPGRADE: Tipo de Movimento substituído pelo seletor de ícones do Lucide */}
               <div>
                 <label className="text-muted text-xs font-medium block mb-1">Tipo de Movimento</label>
                 <TipoMovimentoPicker
@@ -241,7 +242,8 @@ export default function Investimentos() {
                 />
               </div>
 
-              <button onClick={salvarMovimentacao} disabled={loading} className="w-full bg-green text-bg font-bold py-2 rounded-lg text-sm hover:bg-green/90 transition-all mt-1">
+              {/* UPGRADE: Botão em marrom da marca */}
+              <button onClick={salvarMovimentacao} disabled={loading} className="w-full bg-brand-brown text-white font-bold py-2 rounded-lg text-sm hover:bg-brand-brownHover transition-all mt-1">
                 Registrar
               </button>
             </div>
@@ -259,7 +261,7 @@ export default function Investimentos() {
                 <BarChart data={evolucao} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#2a2d3e" vertical={false} />
                   <XAxis dataKey="mes_ano" tick={{ fill: "#a3a8b4", fontSize: 11 }} />
-                  <YAxis tick={{ fill: "#a3a8b4", fontSize: 11 }} tickFormatter={v => `${Number(v).toLocaleString("pt-BR", { maximumFractionDigits: 0 })}`} />
+                  <YAxis tick={{ fill: "#a3a8b4", fontSize: 11 }} tickFormatter={v => `R$ ${Number(v).toLocaleString("pt-BR", { maximumFractionDigits: 0 })}`} />
                   <Tooltip
                     formatter={(v) => fmt(v)}
                     contentStyle={{ background: "#161922", border: "1px solid #2a2d3e", borderRadius: 8 }}
@@ -360,7 +362,7 @@ export default function Investimentos() {
   )
 }
 
-// UPGRADE: Componente Customizado TipoMovimentoPicker utilizando ícones nativos do Lucide
+// UPGRADE: Componente Customizado TipoMovimentoPicker utilizando cores e estilos da marca
 function TipoMovimentoPicker({ value, onChange }) {
   const [aberto, setAberto] = useState(false)
   
@@ -375,11 +377,10 @@ function TipoMovimentoPicker({ value, onChange }) {
 
   return (
     <div className="relative inline-block w-full">
-      {/* Botão Principal do Seletor */}
       <button
         type="button"
         onClick={() => setAberto(!aberto)}
-        className="bg-surface border border-border text-white text-sm px-3 py-2 rounded-xl focus:outline-none focus:border-green w-full flex items-center justify-between gap-2 hover:bg-surface2 transition-all"
+        className="bg-surface border border-border text-white text-sm px-3 py-2 rounded-xl focus:outline-none focus:border-brand-brown w-full flex items-center justify-between gap-2 hover:bg-surface2 transition-all"
       >
         <div className="flex items-center gap-2.5">
           <CurrentIcon size={14} className={selecionado.cor} />
@@ -388,12 +389,10 @@ function TipoMovimentoPicker({ value, onChange }) {
         <span className="text-[10px] text-gray-400">▼</span>
       </button>
 
-      {/* Backdrop invisível para clique fora */}
       {aberto && (
         <div className="fixed inset-0 z-40" onClick={() => setAberto(false)} />
       )}
 
-      {/* Lista Flutuante de Opções */}
       {aberto && (
         <div className="absolute top-full left-0 mt-2 bg-surface2 border border-border rounded-xl p-1.5 w-full shadow-2xl z-50 animate-fadeIn">
           <div className="flex flex-col gap-1">
@@ -405,9 +404,9 @@ function TipoMovimentoPicker({ value, onChange }) {
                   onChange(valor)
                   setAberto(false)
                 }}
-                className={`flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-lg uppercase transition-all text-left ${
+                className={`flex items-center gap-2.5 px-3 py-2.5 text-xs font-semibold rounded-lg uppercase transition-all text-left ${
                   value === valor
-                    ? "bg-green/10 text-green"
+                    ? "bg-brand-brown/15 text-brand-brown font-bold"
                     : "text-gray-400 hover:text-white hover:bg-surface"
                 }`}
               >
@@ -462,7 +461,7 @@ function MonthPicker({ value, onChange, anos }) {
       <button
         type="button"
         onClick={() => setAberto(!aberto)}
-        className="bg-surface border border-border text-white text-sm px-3 py-2 rounded-xl focus:outline-none focus:border-green w-full flex items-center justify-between gap-2 hover:bg-surface2 transition-all"
+        className="bg-surface border border-border text-white text-sm px-3 py-2 rounded-xl focus:outline-none focus:border-brand-brown w-full flex items-center justify-between gap-2 hover:bg-surface2 transition-all"
       >
         <span>{value ? `${mesNomeExibicao}/${anoSel}` : "Selecione"}</span>
         <span className="text-[10px] text-gray-400">▼</span>
@@ -505,7 +504,7 @@ function MonthPicker({ value, onChange, anos }) {
                   }}
                   className={`py-2 text-xs font-semibold rounded-lg uppercase transition-all ${
                     estaSelecionado
-                      ? "bg-green text-bg font-bold"
+                      ? "bg-brand-brown text-white font-bold"
                       : "text-gray-400 hover:text-white hover:bg-surface"
                   }`}
                 >

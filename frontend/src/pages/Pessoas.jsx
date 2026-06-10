@@ -74,11 +74,11 @@ export default function Pessoas() {
             onChange={e => setNome(e.target.value)}
             onKeyDown={e => e.key === "Enter" && adicionar()}
             placeholder="Ex: João, Maria..."
-            className="w-full bg-bg border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green" 
+            className="w-full bg-bg border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-brand-brown" 
           />
           <button 
             onClick={adicionar}
-            className="bg-green text-bg px-5 py-2 rounded-lg text-sm font-bold hover:bg-green/90 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer relative z-30"
+            className="bg-brand-brown text-white px-5 py-2 rounded-lg text-sm font-bold hover:bg-brand-brownHover active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer relative z-30"
           >
             <Plus size={14} /> Adicionar
           </button>

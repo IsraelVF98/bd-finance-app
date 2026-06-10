@@ -108,8 +108,8 @@ export default function Layout() {
           
           {/* UPGRADE: Topbar mobile alinhada com as cores e as duas imagens da marca */}
           <div className="flex items-center gap-2">
-            <img src={only_logo} alt="B&D Finance Logo" className="w-6 h-6 object-contain" />
-            <img src={name} alt="B&D Finance" className="w-16 h-6 object-contain" />
+            <img src={only_logo} alt="B&D Finance Logo" className="w-10 h-10 object-contain" />
+            <img src={name} alt="B&D Finance" className="w-30 h-6 object-contain" />
           </div>
           
           <div className="w-8" /> {/* Div vazia apenas para equilibrar o flexbox e centralizar o logo */}

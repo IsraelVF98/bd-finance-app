@@ -26,8 +26,10 @@ const PALETA_CORES = [
   "#FFCD56", "#C9CBCC", "#FF5733", "#33FF57", "#3357FF"
 ]
 
+// UPGRADE: Declarado mesAtual de forma global para evitar quebra no MonthPicker
 const hoje = new Date()
 const anoAtual = hoje.getFullYear().toString()
+const mesAtual = String(hoje.getMonth() + 1).padStart(2, "0")
 
 export default function Dashboard() {
   const [anos, setAnos] = useState([])
@@ -67,15 +69,12 @@ export default function Dashboard() {
     
     const promessas = [
       api.get("/dashboard/resumo", { params }),
-      api.get("/dashboard/evolucao-mensal", { params: { data_inicio: dataInicio, data_fim: dataFim } }),
+      api.get("/dashboard/evolucao-mensal", { params }),
       api.get("/dashboard/por-categoria", { params }),
       api.get("/dashboard/avulsas-vs-parceladas", { params }),
       api.get("/dashboard/extrato", { params }),
+      api.get("/dashboard/tabelao", { params }),
     ]
-
-    if (filtroPessoa === "todos") {
-      promessas.push(api.get("/dashboard/tabelao", { params }))
-    }
 
     Promise.all(promessas).then(([r, e, c, p, ex, t]) => {
       setResumo(r.data)
@@ -87,12 +86,7 @@ export default function Dashboard() {
       setCategorias(c.data)
       setProporcao(p.data)
       setExtrato(ex.data)
-      
-      if (t) {
-        setTabelaoData(t.data)
-      } else {
-        setTabelaoData(null)
-      }
+      setTabelaoData(t.data)
     }).catch(err => {
       console.error("Erro ao buscar dados do dashboard", err)
     }).finally(() => setLoading(false))
@@ -134,7 +128,6 @@ export default function Dashboard() {
         <h1 className="text-2xl font-bold text-white">Dashboard</h1>
 
         <div className="flex flex-wrap items-center gap-3">
-          {/* Mês/Ano Inicial Customizado */}
           <MonthPicker
             value={dataInicio}
             onChange={handleDataInicioChange}
@@ -143,7 +136,6 @@ export default function Dashboard() {
 
           <span className="text-gray-400 text-sm font-medium">até</span>
 
-          {/* Mês/Ano Final Customizado */}
           <MonthPicker
             value={dataFim}
             onChange={handleDataFimChange}
@@ -178,9 +170,9 @@ export default function Dashboard() {
             <KpiCard label="Total Despesas" value={resumo.despesas} cor="#EF553B" sub="Saídas registradas" />
           </div>
 
-          {/* Consolidação Mensal */}
-          {filtroPessoa === "todos" && tabelaoData && tabelaoData.linhas.length > 0 && (
-            <ChartCard title="Consolidação Mensal">
+          {/* Tabelão de Consolidação Mensal */}
+          {tabelaoData && tabelaoData.linhas.length > 0 && (
+            <ChartCard title="Tabelão de Consolidação Mensal">
               <div className="overflow-x-auto -mx-5 px-5">
                 <table className="w-full text-[10px] md:text-xs whitespace-nowrap border-collapse">
                   <thead>
@@ -345,7 +337,7 @@ export default function Dashboard() {
                       <tr key={row.id} className="hover:bg-surface2 transition-colors">
                         {dataInicio !== dataFim && <td className="py-2 px-2.5 text-subtle font-mono text-[11px] md:text-xs">{row.mes_ano}</td>}
                         <td className="py-2 px-2.5">
-                          <span className="bg-green/10 text-green px-1.5 py-0.5 rounded text-[10px] md:text-xs font-medium">
+                          <span className="bg-brand-brown/10 text-brand-brown px-1.5 py-0.5 rounded text-[10px] md:text-xs font-medium">
                             {row.categoria}
                           </span>
                         </td>
@@ -385,10 +377,10 @@ function ChartCard({ title, children }) {
   )
 }
 
-// UPGRADE: Componente Customizado MonthPicker (Visual Estilo Windows / Fluent Dark)
+// Componente Customizado MonthPicker (Visual Estilo Windows / Fluent Dark)
 function MonthPicker({ value, onChange, anos }) {
   const [aberto, setAberto] = useState(false)
-  const [mesSel, anoSel] = value ? value.split("/") : ["06", anoAtual]
+  const [mesSel, anoSel] = value ? value.split("/") : [mesAtual, anoAtual.toString()]
   const [anoVisualizado, setAnoVisualizado] = useState(anoSel)
 
   useEffect(() => {
@@ -474,7 +466,7 @@ function MonthPicker({ value, onChange, anos }) {
                   }}
                   className={`py-2 text-xs font-semibold rounded-lg uppercase transition-all ${
                     estaSelecionado
-                      ? "bg-green text-bg font-bold"
+                      ? "bg-brand-brown text-white font-bold"
                       : "text-gray-400 hover:text-white hover:bg-surface"
                   }`}
                 >
