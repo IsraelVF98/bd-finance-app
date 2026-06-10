@@ -1,5 +1,7 @@
 // src/components/Layout.jsx
 import logo from "../assets/logo.png"
+import name from "../assets/name.png"
+import only_logo from "../assets/only_logo.png"
 import { useState } from "react"
 import { Outlet, NavLink, useNavigate } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
@@ -48,10 +50,6 @@ export default function Layout() {
         <div className="p-5 border-b border-border flex flex-col items-center justify-center text-center relative w-full gap-0">
           {/* Logo destacada */}
           <img src={logo} alt="B&D Finance Logo" className="w-15 h-15 object-contain" />
-          
-          {/* Nome da marca colorizado de forma nítida */}
-          <div className="text-lg font-bold tracking-tight">
-          </div>
 
           {/* Botão fechar absoluto no mobile (evita desalinhamento horizontal) */}
           <button 
@@ -72,7 +70,7 @@ export default function Layout() {
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
                   isActive
-                    ? "bg-green/10 text-green font-bold"
+                    ? "bg-brand-brown/15 text-brand-brown font-bold"
                     : "text-muted hover:text-white hover:bg-surface2"
                 }`
               }
@@ -108,13 +106,10 @@ export default function Layout() {
             <Menu size={24} />
           </button>
           
-          {/* UPGRADE: Topbar mobile alinhada com as cores e logo */}
+          {/* UPGRADE: Topbar mobile alinhada com as cores e as duas imagens da marca */}
           <div className="flex items-center gap-2">
-            <img src={logo} alt="B&D Finance Logo" className="w-6 h-6 object-contain" />
-            <div className="text-base font-bold tracking-tight">
-              <span className="text-[#6f5439]">B&D</span>
-              <span className="text-[#747570]"> Finance</span>
-            </div>
+            <img src={only_logo} alt="B&D Finance Logo" className="w-6 h-6 object-contain" />
+            <img src={name} alt="B&D Finance" className="w-16 h-6 object-contain" />
           </div>
           
           <div className="w-8" /> {/* Div vazia apenas para equilibrar o flexbox e centralizar o logo */}
