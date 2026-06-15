@@ -1,0 +1,8 @@
+{
+  "appId": "com.bdfinance.app",
+  "appName": "B&D Finance",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "http"
+  }
+}

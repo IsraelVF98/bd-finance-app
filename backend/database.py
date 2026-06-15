@@ -87,3 +87,5 @@ def criar_tabelas():
                 usuario_id INTEGER REFERENCES usuarios(id) ON DELETE CASCADE
             );
         """))
+        conn.execute(text("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS email TEXT;"))
+        conn.execute(text("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS reset_code TEXT;"))

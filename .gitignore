@@ -1,18 +1,32 @@
-# Cache do Python
+# Arquivos de build do frontend (Vite)
+/dist
+/build
+
+# Cache e dependências do Frontend (Node.js)
+node_modules/
+.DS_Store
+Thumbs.db
+
+# Arquivos de configuração do React Native (se aplicável no futuro)
+.env
+.env.*
+*.local
+
+# Arquivos de cache e configurações do Python/Backend
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-
-# Ambientes Virtuais (Venv)
 .venv/
 venv/
 env/
 ENV/
 
-# Credenciais e Senhas (Segurança)
-.env
-
-# Arquivos de sistema
-.DS_Store
-Thumbs.db
+# Arquivos específicos do Android Studio (ignorados por padrão)
+*.iml
+.gradle/
+.idea/
+build/
+captures/
+gradle/wrapper/gradle-wrapper.jar
+gradle/wrapper/gradle-wrapper.properties

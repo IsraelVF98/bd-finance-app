@@ -5,9 +5,9 @@ import only_logo from "../assets/only_logo.png"
 import { useState } from "react"
 import { Outlet, NavLink, useNavigate } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
+import api from "../api/client"
 import { 
-  LayoutDashboard, ArrowLeftRight, CreditCard, Tag, Users, LogOut, Menu, X, 
-  PiggyBank 
+  LayoutDashboard, ArrowLeftRight, CreditCard, Tag, Users, LogOut, Menu, X, PiggyBank, Trash2
 } from "lucide-react"
 
 const menu = [
@@ -81,11 +81,34 @@ export default function Layout() {
           ))}
         </nav>
 
-        {/* Rodapé da Sidebar (Dados do usuário e sair) */}
-        <div className="p-3 border-t border-border">
-          <div className="px-3 py-2 text-xs text-subtle mb-0">
+        {/* Rodapé da Sidebar (Dados do usuário, exclusão de conta e sair) */}
+        <div className="p-3 border-t border-border space-y-1">
+          <div className="px-3 py-2 text-xs text-subtle mb-1">
             Logado como <span className="text-white font-medium">{username}</span>
           </div>
+
+          {/* UPGRADE: Botão de exclusão de conta segura (Alerta duplo e limpeza total) */}
+          <button 
+            onClick={async () => {
+              const confirmou1 = confirm("⚠️ ATENÇÃO: Deseja realmente excluir a sua conta?")
+              if (!confirmou1) return
+              const confirmou2 = confirm("❌ TEM CERTEZA ABSOLUTA? Todos os seus lançamentos, parcelas e investimentos serão excluídos permanentemente sem possibilidade de recuperação!")
+              if (!confirmou2) return
+              
+              try {
+                await api.delete("/auth/delete-account")
+                alert("Sua conta foi excluída com sucesso.")
+                handleLogout()
+              } catch (e) {
+                alert(e.response?.data?.detail || "Erro ao excluir conta.")
+              }
+            }}
+            className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-xs text-red/60 hover:text-red hover:bg-red/10 transition-all font-medium"
+          >
+            <Trash2 size={14} />
+            Excluir Minha Conta
+          </button>
+
           <button onClick={handleLogout}
             className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm text-muted hover:text-red hover:bg-red/10 transition-all">
             <LogOut size={16} />
